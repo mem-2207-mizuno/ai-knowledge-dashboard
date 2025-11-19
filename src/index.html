@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Knowledge Dashboard</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background-color: #f5f5f5;
+      color: #333;
+      line-height: 1.6;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px 0;
+      margin-bottom: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    header h1 {
+      text-align: center;
+      font-size: 2.5em;
+      margin-bottom: 10px;
+    }
+    
+    .search-section {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      margin-bottom: 30px;
+    }
+    
+    .search-box {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    
+    .search-box input {
+      flex: 1;
+      padding: 12px;
+      border: 2px solid #ddd;
+      border-radius: 5px;
+      font-size: 16px;
+    }
+    
+    .search-box input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    
+    .search-box button {
+      padding: 12px 24px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.3s;
+    }
+    
+    .search-box button:hover {
+      background: #5568d3;
+    }
+    
+    .tags-filter {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    
+    .tag-chip {
+      padding: 6px 12px;
+      background: #e0e0e0;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.3s;
+      font-size: 14px;
+    }
+    
+    .tag-chip:hover {
+      background: #667eea;
+      color: white;
+    }
+    
+    .tag-chip.active {
+      background: #667eea;
+      color: white;
+    }
+    
+    .knowledge-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .knowledge-card {
+      background: white;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      transition: transform 0.3s, box-shadow 0.3s;
+      cursor: pointer;
+    }
+    
+    .knowledge-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    .card-thumbnail {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+      background: #f0f0f0;
+    }
+    
+    .card-content {
+      padding: 20px;
+    }
+    
+    .card-title {
+      font-size: 1.2em;
+      font-weight: bold;
+      margin-bottom: 10px;
+      color: #333;
+    }
+    
+    .card-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 15px;
+      font-size: 0.9em;
+      color: #666;
+    }
+    
+    .card-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 10px;
+    }
+    
+    .card-tag {
+      padding: 4px 8px;
+      background: #e3f2fd;
+      color: #1976d2;
+      border-radius: 12px;
+      font-size: 0.8em;
+    }
+    
+    .like-button {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 10px;
+      background: #f5f5f5;
+      border: none;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .like-button:hover {
+      background: #ffebee;
+    }
+    
+    .like-button.liked {
+      background: #ffcdd2;
+      color: #c62828;
+    }
+    
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 1000;
+      overflow-y: auto;
+    }
+    
+    .modal.active {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .modal-content {
+      background: white;
+      border-radius: 10px;
+      padding: 30px;
+      max-width: 800px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+      margin: 20px;
+    }
+    
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    
+    .modal-header h2 {
+      color: #333;
+    }
+    
+    .close-button {
+      background: none;
+      border: none;
+      font-size: 2em;
+      cursor: pointer;
+      color: #666;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+    
+    .error {
+      background: #ffebee;
+      color: #c62828;
+      padding: 15px;
+      border-radius: 5px;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>AI Knowledge Dashboard</h1>
+    </header>
+    
+    <div class="search-section">
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="フリーワードで検索...">
+        <button onclick="searchKnowledge()">検索</button>
+      </div>
+      <div class="tags-filter" id="tagsFilter">
+        <!-- タグフィルタがここに動的に追加されます -->
+      </div>
+    </div>
+    
+    <div id="knowledgeGrid" class="knowledge-grid">
+      <div class="loading">読み込み中...</div>
+    </div>
+  </div>
+  
+  <!-- 詳細モーダル -->
+  <div id="detailModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="modalTitle">ナレッジ詳細</h2>
+        <button class="close-button" onclick="closeModal()">&times;</button>
+      </div>
+      <div id="modalBody">
+        <!-- 詳細内容がここに表示されます -->
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    let allKnowledge = [];
+    let selectedTags = [];
+    
+    // ページ読み込み時にナレッジ一覧を取得
+    window.onload = function() {
+      loadKnowledge();
+    };
+    
+    // ナレッジ一覧を読み込む
+    function loadKnowledge() {
+      google.script.run
+        .withSuccessHandler(displayKnowledge)
+        .withFailureHandler(showError)
+        .getKnowledgeList();
+    }
+    
+    // ナレッジを表示する
+    function displayKnowledge(knowledgeList) {
+      allKnowledge = knowledgeList;
+      const grid = document.getElementById('knowledgeGrid');
+      
+      if (knowledgeList.length === 0) {
+        grid.innerHTML = '<div class="loading">ナレッジが見つかりませんでした</div>';
+        return;
+      }
+      
+      // タグフィルタを更新
+      updateTagFilter(knowledgeList);
+      
+      // カードを生成
+      grid.innerHTML = knowledgeList.map(k => createKnowledgeCard(k)).join('');
+    }
+    
+    // ナレッジカードを作成
+    function createKnowledgeCard(knowledge) {
+      const date = new Date(knowledge.postedAt);
+      const dateStr = date.toLocaleDateString('ja-JP');
+      
+      const tagsHtml = knowledge.tags.map(tag => 
+        `<span class="card-tag">${tag}</span>`
+      ).join('');
+      
+      return `
+        <div class="knowledge-card" onclick="showDetail(${knowledge.id})">
+          ${knowledge.thumbnailUrl ? 
+            `<img src="${knowledge.thumbnailUrl}" alt="${knowledge.title}" class="card-thumbnail" onerror="this.style.display='none'">` : 
+            '<div class="card-thumbnail" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>'
+          }
+          <div class="card-content">
+            <div class="card-title">${knowledge.title}</div>
+            <div class="card-tags">${tagsHtml}</div>
+            <div class="card-meta">
+              <span>${knowledge.postedBy} - ${dateStr}</span>
+              <button class="like-button" onclick="event.stopPropagation(); addLike(${knowledge.id})">
+                ❤️ ${knowledge.likes}
+              </button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+    
+    // タグフィルタを更新
+    function updateTagFilter(knowledgeList) {
+      const tagsSet = new Set();
+      knowledgeList.forEach(k => {
+        k.tags.forEach(tag => tagsSet.add(tag));
+      });
+      
+      const tagsFilter = document.getElementById('tagsFilter');
+      tagsFilter.innerHTML = Array.from(tagsSet).map(tag => 
+        `<span class="tag-chip ${selectedTags.includes(tag) ? 'active' : ''}" onclick="toggleTag('${tag}')">${tag}</span>`
+      ).join('');
+    }
+    
+    // タグをトグル
+    function toggleTag(tag) {
+      const index = selectedTags.indexOf(tag);
+      if (index > -1) {
+        selectedTags.splice(index, 1);
+      } else {
+        selectedTags.push(tag);
+      }
+      filterKnowledge();
+    }
+    
+    // 検索
+    function searchKnowledge() {
+      filterKnowledge();
+    }
+    
+    // フィルタリング
+    function filterKnowledge() {
+      const searchWord = document.getElementById('searchInput').value;
+      
+      const filters = {};
+      if (searchWord) {
+        filters.searchWord = searchWord;
+      }
+      if (selectedTags.length > 0) {
+        filters.tags = selectedTags;
+      }
+      
+      google.script.run
+        .withSuccessHandler(displayKnowledge)
+        .withFailureHandler(showError)
+        .getKnowledgeList(filters);
+      
+      // タグフィルタの表示を更新
+      document.querySelectorAll('.tag-chip').forEach(chip => {
+        const tag = chip.textContent;
+        if (selectedTags.includes(tag)) {
+          chip.classList.add('active');
+        } else {
+          chip.classList.remove('active');
+        }
+      });
+    }
+    
+    // 詳細を表示
+    function showDetail(id) {
+      google.script.run
+        .withSuccessHandler(displayDetail)
+        .withFailureHandler(showError)
+        .getKnowledgeDetail(id);
+    }
+    
+    // 詳細を表示（モーダル）
+    function displayDetail(knowledge) {
+      if (!knowledge) {
+        showError('ナレッジが見つかりませんでした');
+        return;
+      }
+      
+      const modal = document.getElementById('detailModal');
+      const modalTitle = document.getElementById('modalTitle');
+      const modalBody = document.getElementById('modalBody');
+      
+      modalTitle.textContent = knowledge.title;
+      
+      const date = new Date(knowledge.postedAt);
+      const dateStr = date.toLocaleDateString('ja-JP') + ' ' + date.toLocaleTimeString('ja-JP');
+      
+      const tagsHtml = knowledge.tags.map(tag => 
+        `<span class="card-tag">${tag}</span>`
+      ).join('');
+      
+      const commentsHtml = knowledge.comments.map(comment => {
+        const commentDate = new Date(comment.postedAt);
+        return `
+          <div style="padding: 10px; margin: 10px 0; background: #f5f5f5; border-radius: 5px;">
+            <strong>${comment.author}</strong> - ${commentDate.toLocaleString('ja-JP')}
+            <p>${comment.text}</p>
+          </div>
+        `;
+      }).join('');
+      
+      modalBody.innerHTML = `
+        ${knowledge.thumbnailUrl ? `<img src="${knowledge.thumbnailUrl}" alt="${knowledge.title}" style="width: 100%; max-height: 300px; object-fit: cover; border-radius: 5px; margin-bottom: 20px;">` : ''}
+        <p><strong>URL:</strong> <a href="${knowledge.url}" target="_blank">${knowledge.url}</a></p>
+        <p><strong>投稿者:</strong> ${knowledge.postedBy}</p>
+        <p><strong>投稿日時:</strong> ${dateStr}</p>
+        <div class="card-tags" style="margin: 15px 0;">${tagsHtml}</div>
+        <p><strong>説明:</strong></p>
+        <p>${knowledge.comment || '（説明なし）'}</p>
+        <div style="margin: 20px 0;">
+          <h3>コメント</h3>
+          <div id="commentsList">${commentsHtml || '<p>コメントはまだありません</p>'}</div>
+          <div style="margin-top: 20px;">
+            <input type="text" id="newComment" placeholder="コメントを入力..." style="width: 70%; padding: 10px; border: 2px solid #ddd; border-radius: 5px;">
+            <input type="text" id="commentAuthor" placeholder="お名前" style="width: 20%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; margin-left: 10px;">
+            <button onclick="submitComment(${knowledge.id})" style="padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; margin-left: 10px;">投稿</button>
+          </div>
+        </div>
+        <button class="like-button" onclick="addLike(${knowledge.id}); location.reload();" style="margin-top: 20px;">
+          ❤️ いいね ${knowledge.likes}
+        </button>
+      `;
+      
+      modal.classList.add('active');
+    }
+    
+    // モーダルを閉じる
+    function closeModal() {
+      document.getElementById('detailModal').classList.remove('active');
+    }
+    
+    // コメントを投稿
+    function submitComment(knowledgeId) {
+      const commentText = document.getElementById('newComment').value;
+      const author = document.getElementById('commentAuthor').value || '匿名';
+      
+      if (!commentText.trim()) {
+        alert('コメントを入力してください');
+        return;
+      }
+      
+      google.script.run
+        .withSuccessHandler(function(success) {
+          if (success) {
+            document.getElementById('newComment').value = '';
+            document.getElementById('commentAuthor').value = '';
+            showDetail(knowledgeId);
+          } else {
+            showError('コメントの投稿に失敗しました');
+          }
+        })
+        .withFailureHandler(showError)
+        .addComment(knowledgeId, commentText, author);
+    }
+    
+    // いいねを追加
+    function addLike(knowledgeId) {
+      google.script.run
+        .withSuccessHandler(function(newLikes) {
+          // いいね数を更新
+          const likeButtons = document.querySelectorAll(`.like-button`);
+          likeButtons.forEach(btn => {
+            if (btn.textContent.includes('❤️')) {
+              // 簡易的な更新（実際には再読み込みが確実）
+            }
+          });
+          loadKnowledge(); // 一覧を再読み込み
+        })
+        .withFailureHandler(showError)
+        .addLike(knowledgeId);
+    }
+    
+    // エラーを表示
+    function showError(error) {
+      const grid = document.getElementById('knowledgeGrid');
+      grid.innerHTML = `<div class="error">エラーが発生しました: ${error}</div>`;
+    }
+    
+    // モーダルの外側をクリックで閉じる
+    window.onclick = function(event) {
+      const modal = document.getElementById('detailModal');
+      if (event.target === modal) {
+        closeModal();
+      }
+    }
+  </script>
+</body>
+</html>
+

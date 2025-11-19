@@ -1,0 +1,31 @@
+{
+  "name": "ai-knowledge-dashboard",
+  "version": "1.0.0",
+  "description": "AI Knowledge Dashboard using Google Apps Script and clasp",
+  "main": "index.js",
+  "scripts": {
+    "push": "clasp push",
+    "pull": "clasp pull",
+    "open": "clasp open",
+    "deploy": "clasp deploy",
+    "watch": "clasp push --watch",
+    "build": "tsc",
+    "lint": "eslint src/**/*.ts"
+  },
+  "keywords": [
+    "gas",
+    "google-apps-script",
+    "clasp",
+    "typescript",
+    "bun"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "@google/clasp": "^2.4.2",
+    "@types/google-apps-script": "^1.0.83",
+    "typescript": "^5.3.3"
+  },
+  "packageManager": "bun@latest"
+}
+

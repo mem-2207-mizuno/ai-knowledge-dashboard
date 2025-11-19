@@ -1,0 +1,8 @@
+# Bun設定ファイル
+[install]
+# グローバルパッケージのインストール先
+# globalDir = "~/.bun/install/global"
+
+# 開発依存関係もインストール
+dev = true
+
