@@ -1,4 +1,5 @@
 **/**
-!src/**
+!Code.ts
+!index.html
 !appsscript.json
 

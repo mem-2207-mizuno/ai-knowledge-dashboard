@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI Knowledge Dashboard</title>
+  <!-- Markdownパーサー -->
+  <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
   <style>
     * {
       margin: 0;
@@ -251,12 +253,113 @@
       border-radius: 5px;
       margin: 20px 0;
     }
+    
+    /* Markdown表示用のスタイル */
+    .markdown-content {
+      line-height: 1.8;
+    }
+    
+    .markdown-content h1,
+    .markdown-content h2,
+    .markdown-content h3,
+    .markdown-content h4,
+    .markdown-content h5,
+    .markdown-content h6 {
+      margin-top: 1.5em;
+      margin-bottom: 0.5em;
+      font-weight: bold;
+    }
+    
+    .markdown-content h1 { font-size: 2em; }
+    .markdown-content h2 { font-size: 1.5em; }
+    .markdown-content h3 { font-size: 1.25em; }
+    
+    .markdown-content p {
+      margin: 1em 0;
+    }
+    
+    .markdown-content ul,
+    .markdown-content ol {
+      margin: 1em 0;
+      padding-left: 2em;
+    }
+    
+    .markdown-content li {
+      margin: 0.5em 0;
+    }
+    
+    .markdown-content code {
+      background-color: #f4f4f4;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9em;
+    }
+    
+    .markdown-content pre {
+      background-color: #f4f4f4;
+      padding: 1em;
+      border-radius: 5px;
+      overflow-x: auto;
+      margin: 1em 0;
+    }
+    
+    .markdown-content pre code {
+      background-color: transparent;
+      padding: 0;
+    }
+    
+    .markdown-content blockquote {
+      border-left: 4px solid #667eea;
+      padding-left: 1em;
+      margin: 1em 0;
+      color: #666;
+    }
+    
+    .markdown-content a {
+      color: #667eea;
+      text-decoration: none;
+    }
+    
+    .markdown-content a:hover {
+      text-decoration: underline;
+    }
+    
+    .markdown-content img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 5px;
+      margin: 1em 0;
+    }
+    
+    .markdown-content table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1em 0;
+    }
+    
+    .markdown-content table th,
+    .markdown-content table td {
+      border: 1px solid #ddd;
+      padding: 0.5em;
+      text-align: left;
+    }
+    
+    .markdown-content table th {
+      background-color: #f4f4f4;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <header>
-      <h1>AI Knowledge Dashboard</h1>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <h1>AI Knowledge Dashboard</h1>
+        <button onclick="openAddModal()" style="padding: 10px 20px; background: white; color: #667eea; border: 2px solid white; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; transition: all 0.3s;">
+          + ナレッジを追加
+        </button>
+      </div>
     </header>
     
     <div class="search-section">
@@ -287,9 +390,143 @@
     </div>
   </div>
   
+  <!-- 追加モーダル -->
+  <div id="addModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>ナレッジを追加</h2>
+        <button class="close-button" onclick="closeAddModal()">&times;</button>
+      </div>
+      <div id="addModalBody" style="padding: 20px 0;">
+        <form id="addKnowledgeForm" onsubmit="submitKnowledge(event)">
+          <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">タイトル *</label>
+            <input type="text" id="addTitle" required style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px;">
+          </div>
+          
+          <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">URL *</label>
+            <input type="url" id="addUrl" required style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px;">
+          </div>
+          
+          <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">説明（Markdown形式対応）</label>
+            <textarea id="addComment" rows="6" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px; font-family: inherit;" placeholder="Markdown形式で記述できます"></textarea>
+          </div>
+          
+          <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">タグ（カンマ区切り）</label>
+            <input type="text" id="addTags" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px;" placeholder="例: TypeScript,GAS,開発">
+            <small style="color: #666; font-size: 14px;">複数のタグはカンマで区切ってください</small>
+          </div>
+          
+          <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">投稿者 *</label>
+            <input type="text" id="addPostedBy" required style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px;">
+          </div>
+          
+          <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">サムネイルURL</label>
+            <input type="url" id="addThumbnailUrl" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px;" placeholder="https://example.com/image.jpg">
+          </div>
+          
+          <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 30px;">
+            <button type="button" onclick="closeAddModal()" style="padding: 10px 20px; background: #f5f5f5; color: #333; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;">
+              キャンセル
+            </button>
+            <button type="submit" style="padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold;">
+              追加
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 編集モーダル -->
+  <div id="editModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>ナレッジを編集</h2>
+        <button class="close-button" onclick="closeEditModal()">&times;</button>
+      </div>
+      <div id="editModalBody" style="padding: 20px 0;">
+        <form id="editKnowledgeForm" onsubmit="submitUpdate(event)">
+          <input type="hidden" id="editKnowledgeId">
+          
+          <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">タイトル *</label>
+            <input type="text" id="editTitle" required style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px;">
+          </div>
+          
+          <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">URL *</label>
+            <input type="url" id="editUrl" required style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px;">
+          </div>
+          
+          <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">説明（Markdown形式対応）</label>
+            <textarea id="editComment" rows="6" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px; font-family: inherit;" placeholder="Markdown形式で記述できます"></textarea>
+          </div>
+          
+          <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">タグ（カンマ区切り）</label>
+            <input type="text" id="editTags" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px;" placeholder="例: TypeScript,GAS,開発">
+            <small style="color: #666; font-size: 14px;">複数のタグはカンマで区切ってください</small>
+          </div>
+          
+          <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">投稿者 *</label>
+            <input type="text" id="editPostedBy" required style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px;">
+          </div>
+          
+          <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">サムネイルURL</label>
+            <input type="url" id="editThumbnailUrl" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px;" placeholder="https://example.com/image.jpg">
+          </div>
+          
+          <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 30px;">
+            <button type="button" onclick="closeEditModal()" style="padding: 10px 20px; background: #f5f5f5; color: #333; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;">
+              キャンセル
+            </button>
+            <button type="submit" style="padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold;">
+              更新
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  
   <script>
     let allKnowledge = [];
     let selectedTags = [];
+    
+    // MarkdownをHTMLに変換する関数
+    function renderMarkdown(markdown) {
+      if (!markdown || typeof markdown !== 'string') {
+        return '';
+      }
+      
+      try {
+        // marked.jsが読み込まれているか確認
+        if (typeof marked !== 'undefined') {
+          // XSS対策: オプションを設定
+          marked.setOptions({
+            breaks: true, // 改行を<br>に変換
+            gfm: true, // GitHub Flavored Markdownを有効化
+          });
+          return marked.parse(markdown);
+        } else {
+          // marked.jsが読み込まれていない場合は、エスケープして表示
+          return markdown.replace(/\n/g, '<br>');
+        }
+      } catch (error) {
+        console.error('Error rendering markdown:', error);
+        // エラーが発生した場合は、エスケープして表示
+        return markdown.replace(/\n/g, '<br>');
+      }
+    }
     
     // ページ読み込み時にナレッジ一覧を取得
     window.onload = function() {
@@ -298,16 +535,63 @@
     
     // ナレッジ一覧を読み込む
     function loadKnowledge() {
+      console.log('Loading knowledge list...');
       google.script.run
-        .withSuccessHandler(displayKnowledge)
-        .withFailureHandler(showError)
+        .withSuccessHandler(function(result) {
+          console.log('Success handler called with result:', result);
+          console.log('Result type:', typeof result);
+          
+          // JSON文字列として返ってくる場合の処理
+          let knowledgeList;
+          if (typeof result === 'string') {
+            try {
+              knowledgeList = JSON.parse(result);
+              console.log('Parsed knowledge list:', knowledgeList);
+            } catch (e) {
+              console.error('Failed to parse JSON:', e);
+              showError('データの解析に失敗しました');
+              return;
+            }
+          } else if (Array.isArray(result)) {
+            knowledgeList = result;
+          } else if (result === null || result === undefined) {
+            console.error('Result is null or undefined');
+            showError('データの取得に失敗しました（nullが返されました）');
+            return;
+          } else {
+            console.error('Unexpected result type:', typeof result, result);
+            showError('予期しないデータ形式です');
+            return;
+          }
+          
+          displayKnowledge(knowledgeList);
+        })
+        .withFailureHandler(function(error) {
+          console.error('Failure handler called with error:', error);
+          showError(error);
+        })
         .getKnowledgeList();
     }
     
     // ナレッジを表示する
     function displayKnowledge(knowledgeList) {
-      allKnowledge = knowledgeList;
       const grid = document.getElementById('knowledgeGrid');
+      
+      // nullチェック
+      if (!knowledgeList) {
+        grid.innerHTML = '<div class="error">データの取得に失敗しました</div>';
+        console.error('knowledgeList is null or undefined');
+        return;
+      }
+      
+      // 配列でない場合の処理
+      if (!Array.isArray(knowledgeList)) {
+        grid.innerHTML = '<div class="error">データ形式が正しくありません</div>';
+        console.error('knowledgeList is not an array:', knowledgeList);
+        return;
+      }
+      
+      allKnowledge = knowledgeList;
       
       if (knowledgeList.length === 0) {
         grid.innerHTML = '<div class="loading">ナレッジが見つかりませんでした</div>';
@@ -323,26 +607,36 @@
     
     // ナレッジカードを作成
     function createKnowledgeCard(knowledge) {
-      const date = new Date(knowledge.postedAt);
+      if (!knowledge) {
+        return '';
+      }
+      
+      // postedAtが文字列の場合もDateオブジェクトに変換
+      const date = knowledge.postedAt 
+        ? (typeof knowledge.postedAt === 'string' 
+          ? new Date(knowledge.postedAt) 
+          : new Date(knowledge.postedAt))
+        : new Date();
       const dateStr = date.toLocaleDateString('ja-JP');
       
-      const tagsHtml = knowledge.tags.map(tag => 
+      const tags = knowledge.tags || [];
+      const tagsHtml = tags.map(tag => 
         `<span class="card-tag">${tag}</span>`
       ).join('');
       
       return `
-        <div class="knowledge-card" onclick="showDetail(${knowledge.id})">
+        <div class="knowledge-card" onclick="showDetail(${knowledge.id || 0})">
           ${knowledge.thumbnailUrl ? 
-            `<img src="${knowledge.thumbnailUrl}" alt="${knowledge.title}" class="card-thumbnail" onerror="this.style.display='none'">` : 
+            `<img src="${knowledge.thumbnailUrl}" alt="${knowledge.title || ''}" class="card-thumbnail" onerror="this.style.display='none'">` : 
             '<div class="card-thumbnail" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>'
           }
           <div class="card-content">
-            <div class="card-title">${knowledge.title}</div>
+            <div class="card-title">${knowledge.title || 'タイトルなし'}</div>
             <div class="card-tags">${tagsHtml}</div>
             <div class="card-meta">
-              <span>${knowledge.postedBy} - ${dateStr}</span>
-              <button class="like-button" onclick="event.stopPropagation(); addLike(${knowledge.id})">
-                ❤️ ${knowledge.likes}
+              <span>${knowledge.postedBy || '不明'} - ${dateStr}</span>
+              <button class="like-button" onclick="event.stopPropagation(); addLike(${knowledge.id || 0})">
+                ❤️ ${knowledge.likes || 0}
               </button>
             </div>
           </div>
@@ -352,12 +646,26 @@
     
     // タグフィルタを更新
     function updateTagFilter(knowledgeList) {
+      if (!knowledgeList || !Array.isArray(knowledgeList)) {
+        return;
+      }
+      
       const tagsSet = new Set();
       knowledgeList.forEach(k => {
-        k.tags.forEach(tag => tagsSet.add(tag));
+        if (k && k.tags && Array.isArray(k.tags)) {
+          k.tags.forEach(tag => {
+            if (tag) {
+              tagsSet.add(tag);
+            }
+          });
+        }
       });
       
       const tagsFilter = document.getElementById('tagsFilter');
+      if (!tagsFilter) {
+        return;
+      }
+      
       tagsFilter.innerHTML = Array.from(tagsSet).map(tag => 
         `<span class="tag-chip ${selectedTags.includes(tag) ? 'active' : ''}" onclick="toggleTag('${tag}')">${tag}</span>`
       ).join('');
@@ -392,7 +700,26 @@
       }
       
       google.script.run
-        .withSuccessHandler(displayKnowledge)
+        .withSuccessHandler(function(result) {
+          // JSON文字列として返ってくる場合の処理
+          let knowledgeList;
+          if (typeof result === 'string') {
+            try {
+              knowledgeList = JSON.parse(result);
+            } catch (e) {
+              console.error('Failed to parse JSON:', e);
+              showError('データの解析に失敗しました');
+              return;
+            }
+          } else if (Array.isArray(result)) {
+            knowledgeList = result;
+          } else {
+            console.error('Unexpected result type:', typeof result, result);
+            showError('予期しないデータ形式です');
+            return;
+          }
+          displayKnowledge(knowledgeList);
+        })
         .withFailureHandler(showError)
         .getKnowledgeList(filters);
       
@@ -410,14 +737,29 @@
     // 詳細を表示
     function showDetail(id) {
       google.script.run
-        .withSuccessHandler(displayDetail)
+        .withSuccessHandler(function(result) {
+          // JSON文字列として返ってくる場合の処理
+          let knowledge;
+          if (typeof result === 'string') {
+            try {
+              knowledge = JSON.parse(result);
+            } catch (e) {
+              console.error('Failed to parse JSON:', e);
+              showError('データの解析に失敗しました');
+              return;
+            }
+          } else {
+            knowledge = result;
+          }
+          displayDetail(knowledge);
+        })
         .withFailureHandler(showError)
         .getKnowledgeDetail(id);
     }
     
     // 詳細を表示（モーダル）
     function displayDetail(knowledge) {
-      if (!knowledge) {
+      if (!knowledge || knowledge === null) {
         showError('ナレッジが見つかりませんでした');
         return;
       }
@@ -428,19 +770,29 @@
       
       modalTitle.textContent = knowledge.title;
       
-      const date = new Date(knowledge.postedAt);
+      // postedAtが文字列の場合もDateオブジェクトに変換
+      const date = knowledge.postedAt 
+        ? (typeof knowledge.postedAt === 'string' 
+          ? new Date(knowledge.postedAt) 
+          : new Date(knowledge.postedAt))
+        : new Date();
       const dateStr = date.toLocaleDateString('ja-JP') + ' ' + date.toLocaleTimeString('ja-JP');
       
       const tagsHtml = knowledge.tags.map(tag => 
         `<span class="card-tag">${tag}</span>`
       ).join('');
       
-      const commentsHtml = knowledge.comments.map(comment => {
-        const commentDate = new Date(comment.postedAt);
+      const commentsHtml = (knowledge.comments || []).map(comment => {
+        // postedAtが文字列の場合もDateオブジェクトに変換
+        const commentDate = comment.postedAt 
+          ? (typeof comment.postedAt === 'string' 
+            ? new Date(comment.postedAt) 
+            : new Date(comment.postedAt))
+          : new Date();
         return `
           <div style="padding: 10px; margin: 10px 0; background: #f5f5f5; border-radius: 5px;">
-            <strong>${comment.author}</strong> - ${commentDate.toLocaleString('ja-JP')}
-            <p>${comment.text}</p>
+            <strong>${comment.author || '匿名'}</strong> - ${commentDate.toLocaleString('ja-JP')}
+            <div class="markdown-content" style="margin-top: 10px;">${renderMarkdown(comment.text || '')}</div>
           </div>
         `;
       }).join('');
@@ -452,7 +804,7 @@
         <p><strong>投稿日時:</strong> ${dateStr}</p>
         <div class="card-tags" style="margin: 15px 0;">${tagsHtml}</div>
         <p><strong>説明:</strong></p>
-        <p>${knowledge.comment || '（説明なし）'}</p>
+        <div class="markdown-content">${renderMarkdown(knowledge.comment || '（説明なし）')}</div>
         <div style="margin: 20px 0;">
           <h3>コメント</h3>
           <div id="commentsList">${commentsHtml || '<p>コメントはまだありません</p>'}</div>
@@ -462,9 +814,14 @@
             <button onclick="submitComment(${knowledge.id})" style="padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; margin-left: 10px;">投稿</button>
           </div>
         </div>
-        <button class="like-button" onclick="addLike(${knowledge.id}); location.reload();" style="margin-top: 20px;">
-          ❤️ いいね ${knowledge.likes}
-        </button>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+          <button class="like-button" onclick="addLike(${knowledge.id})" style="flex: 1;">
+            ❤️ いいね ${knowledge.likes}
+          </button>
+          <button onclick="openEditModal(${knowledge.id})" style="padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold;">
+            編集
+          </button>
+        </div>
       `;
       
       modal.classList.add('active');
@@ -504,30 +861,223 @@
       google.script.run
         .withSuccessHandler(function(newLikes) {
           // いいね数を更新
-          const likeButtons = document.querySelectorAll(`.like-button`);
+          const likeButtons = document.querySelectorAll('.like-button');
           likeButtons.forEach(btn => {
             if (btn.textContent.includes('❤️')) {
-              // 簡易的な更新（実際には再読み込みが確実）
+              // いいね数を更新
+              const currentText = btn.textContent;
+              const match = currentText.match(/❤️\s*(\d+)/);
+              if (match) {
+                btn.textContent = `❤️ ${newLikes}`;
+              } else {
+                btn.textContent = `❤️ ${newLikes}`;
+              }
             }
           });
-          loadKnowledge(); // 一覧を再読み込み
+          
+          // モーダルが開いている場合は、詳細を再読み込み
+          const modal = document.getElementById('detailModal');
+          if (modal && modal.classList.contains('active')) {
+            showDetail(knowledgeId);
+          } else {
+            // モーダルが閉じている場合は、一覧を再読み込み
+            loadKnowledge();
+          }
         })
-        .withFailureHandler(showError)
+        .withFailureHandler(function(error) {
+          console.error('Error adding like:', error);
+          showError('いいねの追加に失敗しました');
+        })
         .addLike(knowledgeId);
     }
     
     // エラーを表示
     function showError(error) {
+      console.error('showError called with:', error);
       const grid = document.getElementById('knowledgeGrid');
-      grid.innerHTML = `<div class="error">エラーが発生しました: ${error}</div>`;
+      const errorMessage = error?.message || error?.toString() || 'Unknown error';
+      grid.innerHTML = `<div class="error">エラーが発生しました: ${errorMessage}</div>`;
     }
     
     // モーダルの外側をクリックで閉じる
     window.onclick = function(event) {
-      const modal = document.getElementById('detailModal');
-      if (event.target === modal) {
+      const detailModal = document.getElementById('detailModal');
+      const addModal = document.getElementById('addModal');
+      const editModal = document.getElementById('editModal');
+      if (event.target === detailModal) {
         closeModal();
       }
+      if (event.target === addModal) {
+        closeAddModal();
+      }
+      if (event.target === editModal) {
+        closeEditModal();
+      }
+    }
+    
+    // 追加モーダルを開く
+    function openAddModal() {
+      document.getElementById('addModal').classList.add('active');
+      // フォームをリセット
+      document.getElementById('addKnowledgeForm').reset();
+    }
+    
+    // 追加モーダルを閉じる
+    function closeAddModal() {
+      document.getElementById('addModal').classList.remove('active');
+    }
+    
+    // ナレッジを追加
+    function submitKnowledge(event) {
+      event.preventDefault();
+      
+      const knowledge = {
+        title: document.getElementById('addTitle').value.trim(),
+        url: document.getElementById('addUrl').value.trim(),
+        comment: document.getElementById('addComment').value.trim(),
+        tags: document.getElementById('addTags').value.trim(),
+        postedBy: document.getElementById('addPostedBy').value.trim(),
+        thumbnailUrl: document.getElementById('addThumbnailUrl').value.trim(),
+      };
+      
+      // バリデーション
+      if (!knowledge.title || !knowledge.url || !knowledge.postedBy) {
+        alert('タイトル、URL、投稿者は必須項目です');
+        return;
+      }
+      
+      // 送信ボタンを無効化
+      const submitButton = event.target.querySelector('button[type="submit"]');
+      const originalText = submitButton.textContent;
+      submitButton.disabled = true;
+      submitButton.textContent = '追加中...';
+      
+      google.script.run
+        .withSuccessHandler(function(result) {
+          try {
+            const response = typeof result === 'string' ? JSON.parse(result) : result;
+            if (response.success) {
+              closeAddModal();
+              loadKnowledge(); // 一覧を再読み込み
+              alert('ナレッジを追加しました！');
+            } else {
+              alert('エラー: ' + (response.error || 'ナレッジの追加に失敗しました'));
+            }
+          } catch (e) {
+            console.error('Error parsing response:', e);
+            alert('ナレッジの追加に失敗しました');
+          }
+          submitButton.disabled = false;
+          submitButton.textContent = originalText;
+        })
+        .withFailureHandler(function(error) {
+          console.error('Error adding knowledge:', error);
+          alert('エラー: ' + (error?.message || 'ナレッジの追加に失敗しました'));
+          submitButton.disabled = false;
+          submitButton.textContent = originalText;
+        })
+        .addKnowledge(knowledge);
+    }
+    
+    // 編集モーダルを開く
+    function openEditModal(knowledgeId) {
+      // まず詳細を取得
+      google.script.run
+        .withSuccessHandler(function(result) {
+          let knowledge;
+          if (typeof result === 'string') {
+            try {
+              knowledge = JSON.parse(result);
+            } catch (e) {
+              console.error('Failed to parse JSON:', e);
+              showError('データの解析に失敗しました');
+              return;
+            }
+          } else {
+            knowledge = result;
+          }
+          
+          if (!knowledge || knowledge === null) {
+            alert('ナレッジが見つかりませんでした');
+            return;
+          }
+          
+          // フォームにデータをセット
+          document.getElementById('editKnowledgeId').value = knowledgeId;
+          document.getElementById('editTitle').value = knowledge.title || '';
+          document.getElementById('editUrl').value = knowledge.url || '';
+          document.getElementById('editComment').value = knowledge.comment || '';
+          document.getElementById('editTags').value = (knowledge.tags || []).join(',');
+          document.getElementById('editPostedBy').value = knowledge.postedBy || '';
+          document.getElementById('editThumbnailUrl').value = knowledge.thumbnailUrl || '';
+          
+          // モーダルを開く
+          document.getElementById('editModal').classList.add('active');
+        })
+        .withFailureHandler(function(error) {
+          console.error('Error loading knowledge for edit:', error);
+          alert('ナレッジの読み込みに失敗しました');
+        })
+        .getKnowledgeDetail(knowledgeId);
+    }
+    
+    // 編集モーダルを閉じる
+    function closeEditModal() {
+      document.getElementById('editModal').classList.remove('active');
+    }
+    
+    // ナレッジを更新
+    function submitUpdate(event) {
+      event.preventDefault();
+      
+      const knowledgeId = parseInt(document.getElementById('editKnowledgeId').value);
+      const knowledge = {
+        title: document.getElementById('editTitle').value.trim(),
+        url: document.getElementById('editUrl').value.trim(),
+        comment: document.getElementById('editComment').value.trim(),
+        tags: document.getElementById('editTags').value.trim(),
+        postedBy: document.getElementById('editPostedBy').value.trim(),
+        thumbnailUrl: document.getElementById('editThumbnailUrl').value.trim(),
+      };
+      
+      // バリデーション
+      if (!knowledge.title || !knowledge.url || !knowledge.postedBy) {
+        alert('タイトル、URL、投稿者は必須項目です');
+        return;
+      }
+      
+      // 送信ボタンを無効化
+      const submitButton = event.target.querySelector('button[type="submit"]');
+      const originalText = submitButton.textContent;
+      submitButton.disabled = true;
+      submitButton.textContent = '更新中...';
+      
+      google.script.run
+        .withSuccessHandler(function(result) {
+          try {
+            const response = typeof result === 'string' ? JSON.parse(result) : result;
+            if (response.success) {
+              closeEditModal();
+              closeModal(); // 詳細モーダルも閉じる
+              loadKnowledge(); // 一覧を再読み込み
+              alert('ナレッジを更新しました！');
+            } else {
+              alert('エラー: ' + (response.error || 'ナレッジの更新に失敗しました'));
+            }
+          } catch (e) {
+            console.error('Error parsing response:', e);
+            alert('ナレッジの更新に失敗しました');
+          }
+          submitButton.disabled = false;
+          submitButton.textContent = originalText;
+        })
+        .withFailureHandler(function(error) {
+          console.error('Error updating knowledge:', error);
+          alert('エラー: ' + (error?.message || 'ナレッジの更新に失敗しました'));
+          submitButton.disabled = false;
+          submitButton.textContent = originalText;
+        })
+        .updateKnowledge(knowledgeId, knowledge);
     }
   </script>
 </body>
