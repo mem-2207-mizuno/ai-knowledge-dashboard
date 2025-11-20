@@ -48,6 +48,7 @@ Google Apps Script (GAS) + TypeScript + Google Spreadsheet で構築するナレ
 
 - [Dashboard Plan](docs/design/dashboard-plan.md) – UI/UX 方針と優先順位
 - [Spreadsheet Schema](docs/specs/spreadsheet-schema.md) – シート設計と移行手順
+- [UI Layout Overview](docs/design/ui-layout.md) – Notion ライクな2カラムUIの構成
 - [System Overview](docs/architecture/system-overview.md) – ランタイム構成とデータフロー
 - [Documentation Guidelines](docs/guides/documentation-guidelines.md) – ドキュメント作成時のルール
 

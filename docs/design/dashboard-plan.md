@@ -2,6 +2,7 @@
 
 ## 関連ドキュメント
 - [Spreadsheet Schema](../specs/spreadsheet-schema.md): スプレッドシートの正規化設計と移行手順
+- [UI Layout Overview](./ui-layout.md): Notionライクな2カラムUIの構造とインタラクション
 - [System Overview](../architecture/system-overview.md): ランタイム構成とデータフロー
 - [Documentation Guidelines](../guides/documentation-guidelines.md): ドキュメント作成時のルール
 
