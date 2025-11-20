@@ -7,7 +7,19 @@
   <title>AI Knowledge Dashboard</title>
   <!-- Markdownパーサー -->
   <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
-  <style>
+    <style>
+    :root {
+      --bg: #f7f6f3;
+      --sidebar-bg: #fbfaf7;
+      --border: #e6e3dc;
+      --primary: #5b6dff;
+      --primary-soft: #eef0ff;
+      --text: #2f3437;
+      --muted: #747a80;
+      --card-bg: #ffffff;
+      --accent: #f5f1ff;
+    }
+
     * {
       margin: 0;
       padding: 0;
@@ -15,182 +27,336 @@
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      background-color: #f5f5f5;
-      color: #333;
+      font-family: 'Inter', 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
       line-height: 1.6;
     }
 
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 20px;
+    .layout {
+      display: flex;
+      min-height: 100vh;
     }
 
-    header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 30px 0;
-      margin-bottom: 30px;
+    .sidebar {
+      width: 300px;
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--border);
+      padding: 32px 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+
+    .logo {
+      font-size: 20px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--text);
+    }
+
+    .primary-button {
+      background: var(--text);
+      color: #fff;
+      border: none;
       border-radius: 10px;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      padding: 12px 18px;
+      font-size: 15px;
+      cursor: pointer;
+      transition: opacity 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
 
-    header h1 {
-      text-align: center;
-      font-size: 2.5em;
-      margin-bottom: 10px;
+    .primary-button:hover {
+      opacity: 0.85;
     }
 
-    .search-section {
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      margin-bottom: 30px;
+    .sidebar-section {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .section-title {
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
     }
 
     .search-box {
       display: flex;
-      gap: 10px;
-      margin-bottom: 15px;
+      gap: 8px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 6px;
     }
 
     .search-box input {
+      border: none;
       flex: 1;
-      padding: 12px;
-      border: 2px solid #ddd;
-      border-radius: 5px;
-      font-size: 16px;
+      padding: 8px 10px;
+      font-size: 14px;
+      background: transparent;
     }
 
     .search-box input:focus {
       outline: none;
-      border-color: #667eea;
     }
 
     .search-box button {
-      padding: 12px 24px;
-      background: #667eea;
-      color: white;
       border: none;
-      border-radius: 5px;
+      background: var(--primary);
+      color: white;
+      border-radius: 8px;
+      padding: 8px 14px;
       cursor: pointer;
-      font-size: 16px;
-      transition: background 0.3s;
-    }
-
-    .search-box button:hover {
-      background: #5568d3;
-    }
-
-    .tags-filter {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-    .tag-chip {
-      padding: 6px 12px;
-      background: #e0e0e0;
-      border-radius: 20px;
-      cursor: pointer;
-      transition: all 0.3s;
       font-size: 14px;
     }
 
-    .tag-chip:hover {
-      background: #667eea;
-      color: white;
+    .nav-menu,
+    .category-list,
+    .tags-filter {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      background: transparent;
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--text);
+      transition: background 0.2s, border 0.2s;
+    }
+
+    .nav-item.active {
+      background: var(--primary-soft);
+      border-color: var(--primary);
+    }
+
+    .category-chip {
+      border: 1px solid var(--border);
+      background: #fff;
+      border-radius: 12px;
+      padding: 8px 12px;
+      text-align: left;
+      font-size: 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.2s, border 0.2s;
+    }
+
+    .category-chip.active {
+      border-color: var(--primary);
+      background: var(--primary-soft);
+      color: var(--primary);
+    }
+
+    .tags-filter {
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .tag-chip {
+      padding: 6px 10px;
+      background: #f0efeb;
+      border-radius: 999px;
+      font-size: 13px;
+      cursor: pointer;
+      border: 1px solid transparent;
     }
 
     .tag-chip.active {
-      background: #667eea;
-      color: white;
+      background: var(--accent);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    .main-content {
+      flex: 1;
+      padding: 40px 48px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .main-header {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .main-header h1 {
+      font-size: 28px;
+      font-weight: 700;
+    }
+
+    .main-header p {
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .insight-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+    }
+
+    .insight-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .insight-label {
+      font-size: 13px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .insight-value {
+      font-size: 24px;
+      font-weight: 600;
     }
 
     .knowledge-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
       gap: 20px;
-      margin-bottom: 30px;
     }
 
     .knowledge-card {
-      background: white;
-      border-radius: 10px;
-      overflow: hidden;
-      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      transition: transform 0.3s, box-shadow 0.3s;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
       cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 10px 30px rgba(15, 15, 15, 0.04);
     }
 
     .knowledge-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px rgba(15, 15, 15, 0.08);
     }
 
-    .card-thumbnail {
+    .card-cover {
       width: 100%;
-      height: 200px;
-      object-fit: cover;
-      background: #f0f0f0;
+      height: 160px;
+      border-radius: 12px;
+      background-size: cover;
+      background-position: center;
+      background-color: #f2f1ed;
     }
 
-    .card-content {
-      padding: 20px;
+    .card-header-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .category-badge {
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--accent);
+      color: var(--primary);
+      font-weight: 600;
+      font-size: 12px;
+    }
+
+    .status-pill {
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #f0f0f0;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
     }
 
     .card-title {
-      font-size: 1.2em;
-      font-weight: bold;
-      margin-bottom: 10px;
-      color: #333;
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .card-description {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .card-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .card-tag {
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #f0efeb;
+      font-size: 12px;
     }
 
     .card-meta {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-top: 15px;
-      font-size: 0.9em;
-      color: #666;
-    }
-
-    .card-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 5px;
-      margin-top: 10px;
-    }
-
-    .card-tag {
-      padding: 4px 8px;
-      background: #e3f2fd;
-      color: #1976d2;
-      border-radius: 12px;
-      font-size: 0.8em;
+      font-size: 13px;
+      color: var(--muted);
     }
 
     .like-button {
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      gap: 5px;
-      padding: 5px 10px;
-      background: #f5f5f5;
-      border: none;
-      border-radius: 20px;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid transparent;
+      background: #f3f2ef;
       cursor: pointer;
-      transition: all 0.3s;
+      font-size: 13px;
+      transition: background 0.2s, border 0.2s;
     }
 
     .like-button:hover {
-      background: #ffebee;
+      background: #ffecef;
     }
 
     .like-button.liked {
-      background: #ffcdd2;
-      color: #c62828;
+      background: #ffdee5;
+      border-color: #ff8a9a;
+      color: #d62947;
     }
 
     .modal {
@@ -201,25 +367,25 @@
       width: 100%;
       height: 100%;
       background: rgba(0, 0, 0, 0.5);
+      justify-content: center;
+      align-items: center;
       z-index: 1000;
-      overflow-y: auto;
+      padding: 20px;
     }
 
     .modal.active {
       display: flex;
-      align-items: center;
-      justify-content: center;
     }
 
     .modal-content {
-      background: white;
-      border-radius: 10px;
-      padding: 30px;
-      max-width: 800px;
-      width: 90%;
+      background: #fff;
+      border-radius: 18px;
+      padding: 28px;
+      max-width: 920px;
+      width: 100%;
       max-height: 90vh;
       overflow-y: auto;
-      margin: 20px;
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15);
     }
 
     .modal-header {
@@ -229,134 +395,44 @@
       margin-bottom: 20px;
     }
 
-    .modal-header h2 {
-      color: #333;
+    .modal-title-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .modal-title-group h2 {
+      font-size: 24px;
+      margin: 0;
     }
 
     .close-button {
-      background: none;
       border: none;
-      font-size: 2em;
+      background: transparent;
+      font-size: 28px;
       cursor: pointer;
-      color: #666;
     }
 
-    .loading {
-      text-align: center;
-      padding: 40px;
-      color: #666;
+    .modal-body {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
     }
 
+    .loading,
     .error {
-      background: #ffebee;
-      color: #c62828;
-      padding: 15px;
-      border-radius: 5px;
-      margin: 20px 0;
+      padding: 24px;
+      border-radius: 12px;
+      background: #fff;
+      border: 1px dashed var(--border);
+      text-align: center;
+      color: var(--muted);
     }
 
-    /* Markdown表示用のスタイル */
     .markdown-content {
-      line-height: 1.8;
-    }
-
-    .markdown-content h1,
-    .markdown-content h2,
-    .markdown-content h3,
-    .markdown-content h4,
-    .markdown-content h5,
-    .markdown-content h6 {
-      margin-top: 1.5em;
-      margin-bottom: 0.5em;
-      font-weight: bold;
-    }
-
-    .markdown-content h1 {
-      font-size: 2em;
-    }
-
-    .markdown-content h2 {
-      font-size: 1.5em;
-    }
-
-    .markdown-content h3 {
-      font-size: 1.25em;
-    }
-
-    .markdown-content p {
-      margin: 1em 0;
-    }
-
-    .markdown-content ul,
-    .markdown-content ol {
-      margin: 1em 0;
-      padding-left: 2em;
-    }
-
-    .markdown-content li {
-      margin: 0.5em 0;
-    }
-
-    .markdown-content code {
-      background-color: #f4f4f4;
-      padding: 2px 6px;
-      border-radius: 3px;
-      font-family: 'Courier New', monospace;
-      font-size: 0.9em;
-    }
-
-    .markdown-content pre {
-      background-color: #f4f4f4;
-      padding: 1em;
-      border-radius: 5px;
-      overflow-x: auto;
-      margin: 1em 0;
-    }
-
-    .markdown-content pre code {
-      background-color: transparent;
-      padding: 0;
-    }
-
-    .markdown-content blockquote {
-      border-left: 4px solid #667eea;
-      padding-left: 1em;
-      margin: 1em 0;
-      color: #666;
-    }
-
-    .markdown-content a {
-      color: #667eea;
-      text-decoration: none;
-    }
-
-    .markdown-content a:hover {
-      text-decoration: underline;
-    }
-
-    .markdown-content img {
-      max-width: 100%;
-      height: auto;
-      border-radius: 5px;
-      margin: 1em 0;
-    }
-
-    .markdown-content table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 1em 0;
-    }
-
-    .markdown-content table th,
-    .markdown-content table td {
-      border: 1px solid #ddd;
-      padding: 0.5em;
-      text-align: left;
-    }
-
-    .markdown-content table th {
-      background-color: #f4f4f4;
-      font-weight: bold;
+      background: #f8f7f3;
+      padding: 16px;
+      border-radius: 12px;
     }
   </style>
 </head>
@@ -371,32 +447,70 @@
     };
   </script>
 
-  <div class="container">
-    <header>
-      <div style="display: flex; justify-content: space-between; align-items: center;">
+    <div class="layout">
+    <aside class="sidebar">
+      <div class="logo">🧠 AI Knowledge</div>
+      <button class="primary-button" onclick="openAddModal()">+ ナレッジを追加</button>
+
+      <div class="sidebar-section">
+        <div class="section-title">検索</div>
+        <div class="search-box">
+          <input type="text" id="searchInput" placeholder="キーワードで検索...">
+          <button onclick="searchKnowledge()">検索</button>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="section-title">ビュー</div>
+        <div class="nav-menu">
+          <button class="nav-item active" data-view="all" onclick="setView('all')">🏠 ホーム</button>
+          <button class="nav-item" data-view="favorites" onclick="setView('favorites')">⭐ お気に入り</button>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="section-title">カテゴリ</div>
+        <div class="category-list">
+          <button class="category-chip active" data-category="all" onclick="setCategory('all')">🌐 すべて</button>
+          <button class="category-chip" data-category="article" onclick="setCategory('article')">📰 気になる記事</button>
+          <button class="category-chip" data-category="question" onclick="setCategory('question')">❓ 相談・質問</button>
+          <button class="category-chip" data-category="recruitment" onclick="setCategory('recruitment')">🤝 仲間募集</button>
+          <button class="category-chip" data-category="showcase" onclick="setCategory('showcase')">🎁 成果物紹介</button>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="section-title">タグ</div>
+        <div id="tagsFilter" class="tags-filter"></div>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <div class="main-header">
         <h1>AI Knowledge Dashboard</h1>
-        <button onclick="openAddModal()"
-          style="padding: 10px 20px; background: white; color: #667eea; border: 2px solid white; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; transition: all 0.3s;">
-          + ナレッジを追加
-        </button>
+        <p>チームのナレッジを検索・整理し、URL 共有やタグで素早くアクセスできる Notion ライクなビュー。</p>
       </div>
-    </header>
 
-    <div class="search-section">
-      <div class="search-box">
-        <input type="text" id="searchInput" placeholder="フリーワードで検索...">
-        <button onclick="searchKnowledge()">検索</button>
+      <div class="insight-cards">
+        <div class="insight-card">
+          <div class="insight-label">Total entries</div>
+          <div class="insight-value" id="statTotalPosts">0</div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-label">Favorites</div>
+          <div class="insight-value" id="statFavorites">0</div>
+        </div>
+        <div class="insight-card">
+          <div class="insight-label">Comments</div>
+          <div class="insight-value" id="statComments">0</div>
+        </div>
       </div>
-      <div class="tags-filter" id="tagsFilter">
-        <!-- タグフィルタがここに動的に追加されます -->
-      </div>
-    </div>
 
-    <div id="knowledgeGrid" class="knowledge-grid">
-      <div class="loading">読み込み中...</div>
-    </div>
+      <div id="knowledgeGrid" class="knowledge-grid">
+        <div class="loading">読み込み中...</div>
+      </div>
+    </main>
   </div>
-
   <!-- 詳細モーダル -->
   <div id="detailModal" class="modal">
     <div class="modal-content">
@@ -541,8 +655,18 @@
   </div>
 
   <script>
+    const CATEGORY_CONFIG = [
+      { id: 'all', label: 'すべて', icon: '🌐' },
+      { id: 'article', label: '気になる記事', icon: '📰' },
+      { id: 'question', label: '相談・質問', icon: '❓' },
+      { id: 'recruitment', label: '仲間募集', icon: '🤝' },
+      { id: 'showcase', label: '成果物紹介', icon: '🎁' },
+    ];
+
     let allKnowledge = [];
     let selectedTags = [];
+    let selectedCategory = 'all';
+    let currentView = 'all';
 
     const CLIENT_ID_STORAGE_KEY = 'ai-knowledge-dashboard-client-id';
     function ensureClientId() {
@@ -599,6 +723,7 @@
       }
       likedKnowledgeIds.add(id.toString());
       saveLikedKnowledgeIds();
+      updateInsights();
     }
 
     function findKnowledgeById(id) {
@@ -634,6 +759,41 @@
       return comments.map(comment => renderCommentItem(comment)).join('');
     }
 
+    function getCategoryInfo(categoryId) {
+      const normalized = categoryId || 'article';
+      return CATEGORY_CONFIG.find(cat => cat.id === normalized) || CATEGORY_CONFIG.find(cat => cat.id === 'article');
+    }
+
+    function updateCategoryUI() {
+      document.querySelectorAll('.category-chip').forEach(chip => {
+        const cat = chip.getAttribute('data-category');
+        if (cat) {
+          chip.classList.toggle('active', cat === selectedCategory);
+        }
+      });
+    }
+
+    function setCategory(category) {
+      selectedCategory = category;
+      updateCategoryUI();
+      filterKnowledge();
+    }
+
+    function updateViewUI() {
+      document.querySelectorAll('.nav-item').forEach(item => {
+        const view = item.getAttribute('data-view');
+        if (view) {
+          item.classList.toggle('active', view === currentView);
+        }
+      });
+    }
+
+    function setView(view) {
+      currentView = view;
+      updateViewUI();
+      filterKnowledge();
+    }
+
     function refreshCommentsUI(knowledgeId) {
       const knowledge = findKnowledgeById(knowledgeId);
       if (!knowledge) {
@@ -657,6 +817,7 @@
       }
       knowledge.comments.push(comment);
       refreshCommentsUI(knowledgeId);
+      updateInsights();
     }
 
     function removeOptimisticComment(knowledgeId, tempId) {
@@ -666,6 +827,7 @@
       }
       knowledge.comments = knowledge.comments.filter(comment => comment.tempId !== tempId);
       refreshCommentsUI(knowledgeId);
+      updateInsights();
     }
 
     function confirmOptimisticComment(knowledgeId, tempId) {
@@ -681,13 +843,14 @@
       delete comment.tempId;
       comment.postedAt = new Date();
       refreshCommentsUI(knowledgeId);
+      updateInsights();
     }
 
     function updateLikeDisplay(knowledgeId, likes, pending = false) {
       const liked = isKnowledgeLiked(knowledgeId);
       const cardBtn = document.getElementById(`like-btn-${knowledgeId}`);
       if (cardBtn) {
-        cardBtn.textContent = `❤️ ${likes}`;
+        cardBtn.textContent = liked ? `❤️ 済 ${likes}` : `❤️ ${likes}`;
         cardBtn.classList.toggle('liked', liked);
         cardBtn.disabled = liked || pending;
         cardBtn.style.opacity = pending ? '0.6' : '1';
@@ -695,7 +858,7 @@
 
       const modalBtn = document.getElementById(`modal-like-btn-${knowledgeId}`);
       if (modalBtn) {
-        modalBtn.textContent = `❤️ いいね ${likes}`;
+        modalBtn.textContent = liked ? `❤️ いいね済 ${likes}` : `❤️ いいね ${likes}`;
         modalBtn.classList.toggle('liked', liked);
         modalBtn.disabled = liked || pending;
         modalBtn.style.opacity = pending ? '0.6' : '1';
@@ -752,6 +915,9 @@
 
     // ページ読み込み時にナレッジ一覧を取得
     window.onload = function () {
+      updateCategoryUI();
+      updateViewUI();
+      updateInsights();
       // 初期ロード時のIDチェック
       // サーバーから渡されたIDのみを信頼し、クライアント側でのURL解析は行わない
       // (GASのiframe URLには予期せぬパラメータが含まれる可能性があるため)
@@ -853,20 +1019,33 @@
 
       allKnowledge = knowledgeList.map(k => ({
         ...k,
+        category: k.category || 'article',
+        status: k.status || 'open',
         likePending: false,
-        comments: Array.isArray(k.comments) ? k.comments.map(comment => ({ ...comment })) : [],
+        postedAt: k.postedAt ? new Date(k.postedAt) : new Date(),
+        comments: Array.isArray(k.comments)
+          ? k.comments.map(comment => ({
+            ...comment,
+            postedAt: comment.postedAt ? new Date(comment.postedAt) : new Date(),
+          }))
+          : [],
       }));
 
-      if (knowledgeList.length === 0) {
-        grid.innerHTML = '<div class="loading">ナレッジが見つかりませんでした</div>';
+      if (allKnowledge.length === 0) {
+        updateTagFilter([]);
+        updateInsights();
+        renderKnowledgeGrid([]);
+        updateCategoryUI();
+        updateViewUI();
         return;
       }
 
       // タグフィルタを更新
       updateTagFilter(allKnowledge);
-
-      // カードを生成
-      grid.innerHTML = allKnowledge.map(k => createKnowledgeCard(k)).join('');
+      updateInsights();
+      updateCategoryUI();
+      updateViewUI();
+      filterKnowledge();
     }
 
     // ナレッジカードを作成
@@ -875,39 +1054,48 @@
         return '';
       }
 
-      // postedAtが文字列の場合もDateオブジェクトに変換
-      const date = knowledge.postedAt
-        ? (typeof knowledge.postedAt === 'string'
-          ? new Date(knowledge.postedAt)
-          : new Date(knowledge.postedAt))
-        : new Date();
+      const categoryInfo = getCategoryInfo(knowledge.category);
+      const categoryLabel = categoryInfo ? `${categoryInfo.icon} ${categoryInfo.label}` : 'ナレッジ';
+      const statusLabel = (knowledge.status || 'open').toUpperCase();
+      const date = knowledge.postedAt instanceof Date ? knowledge.postedAt : new Date(knowledge.postedAt || Date.now());
       const dateStr = date.toLocaleDateString('ja-JP');
-
       const tags = knowledge.tags || [];
       const tagsHtml = tags.map(tag =>
         `<span class="card-tag">${tag}</span>`
       ).join('');
+      const descriptionSource = (knowledge.comment || '')
+        .replace(/<[^>]+>/g, '')
+        .replace(/\n+/g, ' ')
+        .trim();
+      const description = descriptionSource.length > 0
+        ? (descriptionSource.length > 120 ? `${descriptionSource.slice(0, 120)}…` : descriptionSource)
+        : '（説明なし）';
 
       const liked = knowledge.id ? isKnowledgeLiked(knowledge.id) : false;
       const likeButtonClass = `like-button ${liked ? 'liked' : ''}`;
-      const likeButtonText = `❤️ ${knowledge.likes || 0}`;
+      const likeButtonText = liked ? `❤️ 済 ${knowledge.likes || 0}` : `❤️ ${knowledge.likes || 0}`;
       const likeButtonDisabled = liked ? 'disabled' : '';
+
+      const coverHtml = knowledge.thumbnailUrl
+        ? `<div class="card-cover" style="background-image:url('${knowledge.thumbnailUrl}')"></div>`
+        : '';
+
       return `
         <div class="knowledge-card" onclick="showDetail(${knowledge.id || 0})">
-          ${knowledge.thumbnailUrl ?
-          `<img src="${knowledge.thumbnailUrl}" alt="${knowledge.title || ''}" class="card-thumbnail" onerror="this.style.display='none'">` :
-          '<div class="card-thumbnail" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>'
-        }
-          <div class="card-content">
-            <div class="card-title">${knowledge.title || 'タイトルなし'}</div>
-            <div class="card-tags">${tagsHtml}</div>
-            <div class="card-meta">
-              <span>${knowledge.postedBy || '不明'} - ${dateStr}</span>
-              <button id="like-btn-${knowledge.id}" class="${likeButtonClass}" data-knowledge-id="${knowledge.id}"
-                onclick="event.stopPropagation(); addLike(${knowledge.id || 0})" ${likeButtonDisabled}>
-                ${likeButtonText}
-              </button>
-            </div>
+          ${coverHtml}
+          <div class="card-header-line">
+            <span class="category-badge">${categoryLabel}</span>
+            <span class="status-pill">${statusLabel}</span>
+          </div>
+          <div class="card-title">${knowledge.title || 'タイトルなし'}</div>
+          <div class="card-description">${description}</div>
+          <div class="card-tags">${tagsHtml}</div>
+          <div class="card-meta">
+            <span>${knowledge.postedBy || '不明'}・${dateStr}</span>
+            <button id="like-btn-${knowledge.id}" class="${likeButtonClass}" data-knowledge-id="${knowledge.id}"
+              onclick="event.stopPropagation(); addLike(${knowledge.id || 0})" ${likeButtonDisabled}>
+              ${likeButtonText}
+            </button>
           </div>
         </div>
       `;
@@ -951,6 +1139,36 @@
       filterKnowledge();
     }
 
+    function renderKnowledgeGrid(list) {
+      const grid = document.getElementById('knowledgeGrid');
+      if (!grid) {
+        return;
+      }
+      if (!list || list.length === 0) {
+        grid.innerHTML = '<div class="loading">表示できるナレッジが見つかりませんでした</div>';
+        return;
+      }
+      grid.innerHTML = list.map(k => createKnowledgeCard(k)).join('');
+    }
+
+    function updateInsights() {
+      const totalEl = document.getElementById('statTotalPosts');
+      if (totalEl) {
+        totalEl.textContent = allKnowledge.length.toString();
+      }
+      const favoriteEl = document.getElementById('statFavorites');
+      if (favoriteEl) {
+        favoriteEl.textContent = likedKnowledgeIds.size.toString();
+      }
+      const commentCount = allKnowledge.reduce((sum, item) => {
+        return sum + (item.comments ? item.comments.length : 0);
+      }, 0);
+      const commentsEl = document.getElementById('statComments');
+      if (commentsEl) {
+        commentsEl.textContent = commentCount.toString();
+      }
+    }
+
     // 検索
     function searchKnowledge() {
       filterKnowledge();
@@ -958,10 +1176,12 @@
 
     // フィルタリング
     function filterKnowledge() {
-      const searchWord = document.getElementById('searchInput').value.toLowerCase();
+      const searchInput = document.getElementById('searchInput');
+      const searchWord = searchInput ? searchInput.value.toLowerCase() : '';
 
       // ローカルでフィルタリングを実行
       const filteredList = allKnowledge.filter(k => {
+        const normalizedCategory = k.category || 'article';
         // キーワード検索
         let matchesSearch = true;
         if (searchWord) {
@@ -977,16 +1197,13 @@
           matchesTags = selectedTags.some(tag => k.tags && k.tags.includes(tag));
         }
 
-        return matchesSearch && matchesTags;
+        const matchesCategory = selectedCategory === 'all' || normalizedCategory === selectedCategory;
+        const matchesView = currentView === 'all' ? true : isKnowledgeLiked(k.id);
+
+        return matchesSearch && matchesTags && matchesCategory && matchesView;
       });
 
-      // 結果を表示（createKnowledgeCardで再描画）
-      const grid = document.getElementById('knowledgeGrid');
-      if (filteredList.length === 0) {
-        grid.innerHTML = '<div class="loading">条件に一致するナレッジが見つかりませんでした</div>';
-      } else {
-        grid.innerHTML = filteredList.map(k => createKnowledgeCard(k)).join('');
-      }
+      renderKnowledgeGrid(filteredList);
 
       // タグフィルタの表示を更新
       document.querySelectorAll('.tag-chip').forEach(chip => {
@@ -1082,20 +1299,34 @@
         : new Date();
       const dateStr = date.toLocaleDateString('ja-JP') + ' ' + date.toLocaleTimeString('ja-JP');
 
-      const tagsHtml = knowledge.tags.map(tag =>
+      const categoryInfo = getCategoryInfo(knowledge.category);
+      const categoryLabel = categoryInfo ? `${categoryInfo.icon} ${categoryInfo.label}` : 'ナレッジ';
+      const statusLabel = (knowledge.status || 'open').toUpperCase();
+
+      const tagsHtml = (knowledge.tags || []).map(tag =>
         `<span class="card-tag">${tag}</span>`
       ).join('');
 
       const commentsArray = Array.isArray(knowledge.comments) ? knowledge.comments : [];
       const commentsHtml = renderCommentsHtml(commentsArray);
       const isLiked = knowledge.id ? isKnowledgeLiked(knowledge.id) : false;
-      const modalLikeLabel = `❤️ いいね ${knowledge.likes}`;
+      const likesCount = knowledge.likes || 0;
+      const modalLikeLabel = isLiked ? `❤️ いいね済 ${likesCount}` : `❤️ いいね ${likesCount}`;
       const modalLikeClass = `like-button ${isLiked ? 'liked' : ''}`;
       const modalLikeDisabled = isLiked ? 'disabled' : '';
 
+      const knowledgeUrl = knowledge.url || '';
+      const urlMarkup = knowledgeUrl
+        ? `<a href="${knowledgeUrl}" target="_blank">${knowledgeUrl}</a>`
+        : 'URLは登録されていません';
+
       modalBody.innerHTML = `
+        <div style="display:flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px;">
+          <span class="category-badge">${categoryLabel}</span>
+          <span class="status-pill">${statusLabel}</span>
+        </div>
         ${knowledge.thumbnailUrl ? `<img src="${knowledge.thumbnailUrl}" alt="${knowledge.title}" style="width: 100%; max-height: 300px; object-fit: cover; border-radius: 5px; margin-bottom: 20px;">` : ''}
-        <p><strong>URL:</strong> <a href="${knowledge.url}" target="_blank">${knowledge.url}</a></p>
+        <p><strong>URL:</strong> ${urlMarkup}</p>
         <p><strong>投稿者:</strong> ${knowledge.postedBy}</p>
         <p><strong>投稿日時:</strong> ${dateStr}</p>
         <div class="card-tags" style="margin: 15px 0;">${tagsHtml}</div>
