@@ -1,5 +1,2 @@
-**/**
-!Code.ts
-!index.html
-!appsscript.json
-
+# 無視するファイル
+.DS_Store

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,20 +13,20 @@
       padding: 0;
       box-sizing: border-box;
     }
-    
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       background-color: #f5f5f5;
       color: #333;
       line-height: 1.6;
     }
-    
+
     .container {
       max-width: 1200px;
       margin: 0 auto;
       padding: 20px;
     }
-    
+
     header {
       background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
@@ -34,13 +35,13 @@
       border-radius: 10px;
       box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
-    
+
     header h1 {
       text-align: center;
       font-size: 2.5em;
       margin-bottom: 10px;
     }
-    
+
     .search-section {
       background: white;
       padding: 20px;
@@ -48,13 +49,13 @@
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       margin-bottom: 30px;
     }
-    
+
     .search-box {
       display: flex;
       gap: 10px;
       margin-bottom: 15px;
     }
-    
+
     .search-box input {
       flex: 1;
       padding: 12px;
@@ -62,12 +63,12 @@
       border-radius: 5px;
       font-size: 16px;
     }
-    
+
     .search-box input:focus {
       outline: none;
       border-color: #667eea;
     }
-    
+
     .search-box button {
       padding: 12px 24px;
       background: #667eea;
@@ -78,17 +79,17 @@
       font-size: 16px;
       transition: background 0.3s;
     }
-    
+
     .search-box button:hover {
       background: #5568d3;
     }
-    
+
     .tags-filter {
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
     }
-    
+
     .tag-chip {
       padding: 6px 12px;
       background: #e0e0e0;
@@ -97,24 +98,24 @@
       transition: all 0.3s;
       font-size: 14px;
     }
-    
+
     .tag-chip:hover {
       background: #667eea;
       color: white;
     }
-    
+
     .tag-chip.active {
       background: #667eea;
       color: white;
     }
-    
+
     .knowledge-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
       gap: 20px;
       margin-bottom: 30px;
     }
-    
+
     .knowledge-card {
       background: white;
       border-radius: 10px;
@@ -123,30 +124,30 @@
       transition: transform 0.3s, box-shadow 0.3s;
       cursor: pointer;
     }
-    
+
     .knowledge-card:hover {
       transform: translateY(-5px);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     }
-    
+
     .card-thumbnail {
       width: 100%;
       height: 200px;
       object-fit: cover;
       background: #f0f0f0;
     }
-    
+
     .card-content {
       padding: 20px;
     }
-    
+
     .card-title {
       font-size: 1.2em;
       font-weight: bold;
       margin-bottom: 10px;
       color: #333;
     }
-    
+
     .card-meta {
       display: flex;
       justify-content: space-between;
@@ -155,14 +156,14 @@
       font-size: 0.9em;
       color: #666;
     }
-    
+
     .card-tags {
       display: flex;
       flex-wrap: wrap;
       gap: 5px;
       margin-top: 10px;
     }
-    
+
     .card-tag {
       padding: 4px 8px;
       background: #e3f2fd;
@@ -170,7 +171,7 @@
       border-radius: 12px;
       font-size: 0.8em;
     }
-    
+
     .like-button {
       display: flex;
       align-items: center;
@@ -182,16 +183,16 @@
       cursor: pointer;
       transition: all 0.3s;
     }
-    
+
     .like-button:hover {
       background: #ffebee;
     }
-    
+
     .like-button.liked {
       background: #ffcdd2;
       color: #c62828;
     }
-    
+
     .modal {
       display: none;
       position: fixed;
@@ -203,13 +204,13 @@
       z-index: 1000;
       overflow-y: auto;
     }
-    
+
     .modal.active {
       display: flex;
       align-items: center;
       justify-content: center;
     }
-    
+
     .modal-content {
       background: white;
       border-radius: 10px;
@@ -220,18 +221,18 @@
       overflow-y: auto;
       margin: 20px;
     }
-    
+
     .modal-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       margin-bottom: 20px;
     }
-    
+
     .modal-header h2 {
       color: #333;
     }
-    
+
     .close-button {
       background: none;
       border: none;
@@ -239,13 +240,13 @@
       cursor: pointer;
       color: #666;
     }
-    
+
     .loading {
       text-align: center;
       padding: 40px;
       color: #666;
     }
-    
+
     .error {
       background: #ffebee;
       color: #c62828;
@@ -253,12 +254,12 @@
       border-radius: 5px;
       margin: 20px 0;
     }
-    
+
     /* Markdown表示用のスタイル */
     .markdown-content {
       line-height: 1.8;
     }
-    
+
     .markdown-content h1,
     .markdown-content h2,
     .markdown-content h3,
@@ -269,25 +270,33 @@
       margin-bottom: 0.5em;
       font-weight: bold;
     }
-    
-    .markdown-content h1 { font-size: 2em; }
-    .markdown-content h2 { font-size: 1.5em; }
-    .markdown-content h3 { font-size: 1.25em; }
-    
+
+    .markdown-content h1 {
+      font-size: 2em;
+    }
+
+    .markdown-content h2 {
+      font-size: 1.5em;
+    }
+
+    .markdown-content h3 {
+      font-size: 1.25em;
+    }
+
     .markdown-content p {
       margin: 1em 0;
     }
-    
+
     .markdown-content ul,
     .markdown-content ol {
       margin: 1em 0;
       padding-left: 2em;
     }
-    
+
     .markdown-content li {
       margin: 0.5em 0;
     }
-    
+
     .markdown-content code {
       background-color: #f4f4f4;
       padding: 2px 6px;
@@ -295,7 +304,7 @@
       font-family: 'Courier New', monospace;
       font-size: 0.9em;
     }
-    
+
     .markdown-content pre {
       background-color: #f4f4f4;
       padding: 1em;
@@ -303,65 +312,71 @@
       overflow-x: auto;
       margin: 1em 0;
     }
-    
+
     .markdown-content pre code {
       background-color: transparent;
       padding: 0;
     }
-    
+
     .markdown-content blockquote {
       border-left: 4px solid #667eea;
       padding-left: 1em;
       margin: 1em 0;
       color: #666;
     }
-    
+
     .markdown-content a {
       color: #667eea;
       text-decoration: none;
     }
-    
+
     .markdown-content a:hover {
       text-decoration: underline;
     }
-    
+
     .markdown-content img {
       max-width: 100%;
       height: auto;
       border-radius: 5px;
       margin: 1em 0;
     }
-    
+
     .markdown-content table {
       width: 100%;
       border-collapse: collapse;
       margin: 1em 0;
     }
-    
+
     .markdown-content table th,
     .markdown-content table td {
       border: 1px solid #ddd;
       padding: 0.5em;
       text-align: left;
     }
-    
+
     .markdown-content table th {
       background-color: #f4f4f4;
       font-weight: bold;
     }
   </style>
 </head>
+
 <body>
+  <!-- サーバーサイドからの初期データを埋め込むための非表示要素 -->
+  <!-- エスケープなしで出力するために ?!= を使用 -->
+  <script id="initialData" type="application/json"><?!= initialData ?></script>
+
   <div class="container">
     <header>
       <div style="display: flex; justify-content: space-between; align-items: center;">
         <h1>AI Knowledge Dashboard</h1>
-        <button onclick="openAddModal()" style="padding: 10px 20px; background: white; color: #667eea; border: 2px solid white; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; transition: all 0.3s;">
+        <button onclick="openAddModal()"
+          style="padding: 10px 20px; background: white; color: #667eea; border: 2px solid white; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold; transition: all 0.3s;">
           + ナレッジを追加
         </button>
       </div>
     </header>
-    
+
     <div class="search-section">
       <div class="search-box">
         <input type="text" id="searchInput" placeholder="フリーワードで検索...">
@@ -371,12 +386,12 @@
         <!-- タグフィルタがここに動的に追加されます -->
       </div>
     </div>
-    
+
     <div id="knowledgeGrid" class="knowledge-grid">
       <div class="loading">読み込み中...</div>
     </div>
   </div>
-  
+
   <!-- 詳細モーダル -->
   <div id="detailModal" class="modal">
     <div class="modal-content">
@@ -389,7 +404,7 @@
       </div>
     </div>
   </div>
-  
+
   <!-- 追加モーダル -->
   <div id="addModal" class="modal">
     <div class="modal-content">
@@ -401,40 +416,51 @@
         <form id="addKnowledgeForm" onsubmit="submitKnowledge(event)">
           <div style="margin-bottom: 20px;">
             <label style="display: block; margin-bottom: 5px; font-weight: bold;">タイトル *</label>
-            <input type="text" id="addTitle" required style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px;">
+            <input type="text" id="addTitle" required
+              style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px;">
           </div>
-          
+
           <div style="margin-bottom: 20px;">
             <label style="display: block; margin-bottom: 5px; font-weight: bold;">URL *</label>
-            <input type="url" id="addUrl" required style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px;">
+            <input type="url" id="addUrl" required
+              style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px;">
           </div>
-          
+
           <div style="margin-bottom: 20px;">
             <label style="display: block; margin-bottom: 5px; font-weight: bold;">説明（Markdown形式対応）</label>
-            <textarea id="addComment" rows="6" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px; font-family: inherit;" placeholder="Markdown形式で記述できます"></textarea>
+            <textarea id="addComment" rows="6"
+              style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px; font-family: inherit;"
+              placeholder="Markdown形式で記述できます"></textarea>
           </div>
-          
+
           <div style="margin-bottom: 20px;">
             <label style="display: block; margin-bottom: 5px; font-weight: bold;">タグ（カンマ区切り）</label>
-            <input type="text" id="addTags" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px;" placeholder="例: TypeScript,GAS,開発">
+            <input type="text" id="addTags"
+              style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px;"
+              placeholder="例: TypeScript,GAS,開発">
             <small style="color: #666; font-size: 14px;">複数のタグはカンマで区切ってください</small>
           </div>
-          
+
           <div style="margin-bottom: 20px;">
             <label style="display: block; margin-bottom: 5px; font-weight: bold;">投稿者 *</label>
-            <input type="text" id="addPostedBy" required style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px;">
+            <input type="text" id="addPostedBy" required
+              style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px;">
           </div>
-          
+
           <div style="margin-bottom: 20px;">
             <label style="display: block; margin-bottom: 5px; font-weight: bold;">サムネイルURL</label>
-            <input type="url" id="addThumbnailUrl" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px;" placeholder="https://example.com/image.jpg">
+            <input type="url" id="addThumbnailUrl"
+              style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px;"
+              placeholder="https://example.com/image.jpg">
           </div>
-          
+
           <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 30px;">
-            <button type="button" onclick="closeAddModal()" style="padding: 10px 20px; background: #f5f5f5; color: #333; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;">
+            <button type="button" onclick="closeAddModal()"
+              style="padding: 10px 20px; background: #f5f5f5; color: #333; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;">
               キャンセル
             </button>
-            <button type="submit" style="padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold;">
+            <button type="submit"
+              style="padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold;">
               追加
             </button>
           </div>
@@ -442,7 +468,7 @@
       </div>
     </div>
   </div>
-  
+
   <!-- 編集モーダル -->
   <div id="editModal" class="modal">
     <div class="modal-content">
@@ -453,43 +479,54 @@
       <div id="editModalBody" style="padding: 20px 0;">
         <form id="editKnowledgeForm" onsubmit="submitUpdate(event)">
           <input type="hidden" id="editKnowledgeId">
-          
+
           <div style="margin-bottom: 20px;">
             <label style="display: block; margin-bottom: 5px; font-weight: bold;">タイトル *</label>
-            <input type="text" id="editTitle" required style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px;">
+            <input type="text" id="editTitle" required
+              style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px;">
           </div>
-          
+
           <div style="margin-bottom: 20px;">
             <label style="display: block; margin-bottom: 5px; font-weight: bold;">URL *</label>
-            <input type="url" id="editUrl" required style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px;">
+            <input type="url" id="editUrl" required
+              style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px;">
           </div>
-          
+
           <div style="margin-bottom: 20px;">
             <label style="display: block; margin-bottom: 5px; font-weight: bold;">説明（Markdown形式対応）</label>
-            <textarea id="editComment" rows="6" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px; font-family: inherit;" placeholder="Markdown形式で記述できます"></textarea>
+            <textarea id="editComment" rows="6"
+              style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px; font-family: inherit;"
+              placeholder="Markdown形式で記述できます"></textarea>
           </div>
-          
+
           <div style="margin-bottom: 20px;">
             <label style="display: block; margin-bottom: 5px; font-weight: bold;">タグ（カンマ区切り）</label>
-            <input type="text" id="editTags" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px;" placeholder="例: TypeScript,GAS,開発">
+            <input type="text" id="editTags"
+              style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px;"
+              placeholder="例: TypeScript,GAS,開発">
             <small style="color: #666; font-size: 14px;">複数のタグはカンマで区切ってください</small>
           </div>
-          
+
           <div style="margin-bottom: 20px;">
             <label style="display: block; margin-bottom: 5px; font-weight: bold;">投稿者 *</label>
-            <input type="text" id="editPostedBy" required style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px;">
+            <input type="text" id="editPostedBy" required
+              style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px;">
           </div>
-          
+
           <div style="margin-bottom: 20px;">
             <label style="display: block; margin-bottom: 5px; font-weight: bold;">サムネイルURL</label>
-            <input type="url" id="editThumbnailUrl" style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px;" placeholder="https://example.com/image.jpg">
+            <input type="url" id="editThumbnailUrl"
+              style="width: 100%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; font-size: 16px;"
+              placeholder="https://example.com/image.jpg">
           </div>
-          
+
           <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 30px;">
-            <button type="button" onclick="closeEditModal()" style="padding: 10px 20px; background: #f5f5f5; color: #333; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;">
+            <button type="button" onclick="closeEditModal()"
+              style="padding: 10px 20px; background: #f5f5f5; color: #333; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;">
               キャンセル
             </button>
-            <button type="submit" style="padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold;">
+            <button type="submit"
+              style="padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold;">
               更新
             </button>
           </div>
@@ -497,17 +534,17 @@
       </div>
     </div>
   </div>
-  
+
   <script>
     let allKnowledge = [];
     let selectedTags = [];
-    
+
     // MarkdownをHTMLに変換する関数
     function renderMarkdown(markdown) {
       if (!markdown || typeof markdown !== 'string') {
         return '';
       }
-      
+
       try {
         // marked.jsが読み込まれているか確認
         if (typeof marked !== 'undefined') {
@@ -527,20 +564,33 @@
         return markdown.replace(/\n/g, '<br>');
       }
     }
-    
+
     // ページ読み込み時にナレッジ一覧を取得
-    window.onload = function() {
-      loadKnowledge();
+    window.onload = function () {
+      // サーバーサイドから渡された初期データがある場合はそれを使用
+      const initialDataElement = document.getElementById('initialData');
+      if (initialDataElement && initialDataElement.textContent) {
+        try {
+          const initialData = JSON.parse(initialDataElement.textContent);
+          console.log('Loaded initial data from server');
+          displayKnowledge(initialData);
+        } catch (e) {
+          console.error('Failed to parse initial data:', e);
+          loadKnowledge(); // パース失敗時は通常通り取得
+        }
+      } else {
+        loadKnowledge();
+      }
     };
-    
+
     // ナレッジ一覧を読み込む
     function loadKnowledge() {
       console.log('Loading knowledge list...');
       google.script.run
-        .withSuccessHandler(function(result) {
+        .withSuccessHandler(function (result) {
           console.log('Success handler called with result:', result);
           console.log('Result type:', typeof result);
-          
+
           // JSON文字列として返ってくる場合の処理
           let knowledgeList;
           if (typeof result === 'string') {
@@ -563,79 +613,79 @@
             showError('予期しないデータ形式です');
             return;
           }
-          
+
           displayKnowledge(knowledgeList);
         })
-        .withFailureHandler(function(error) {
+        .withFailureHandler(function (error) {
           console.error('Failure handler called with error:', error);
           showError(error);
         })
         .getKnowledgeList();
     }
-    
+
     // ナレッジを表示する
     function displayKnowledge(knowledgeList) {
       const grid = document.getElementById('knowledgeGrid');
-      
+
       // nullチェック
       if (!knowledgeList) {
         grid.innerHTML = '<div class="error">データの取得に失敗しました</div>';
         console.error('knowledgeList is null or undefined');
         return;
       }
-      
+
       // 配列でない場合の処理
       if (!Array.isArray(knowledgeList)) {
         grid.innerHTML = '<div class="error">データ形式が正しくありません</div>';
         console.error('knowledgeList is not an array:', knowledgeList);
         return;
       }
-      
+
       allKnowledge = knowledgeList;
-      
+
       if (knowledgeList.length === 0) {
         grid.innerHTML = '<div class="loading">ナレッジが見つかりませんでした</div>';
         return;
       }
-      
+
       // タグフィルタを更新
       updateTagFilter(knowledgeList);
-      
+
       // カードを生成
       grid.innerHTML = knowledgeList.map(k => createKnowledgeCard(k)).join('');
     }
-    
+
     // ナレッジカードを作成
     function createKnowledgeCard(knowledge) {
       if (!knowledge) {
         return '';
       }
-      
+
       // postedAtが文字列の場合もDateオブジェクトに変換
-      const date = knowledge.postedAt 
-        ? (typeof knowledge.postedAt === 'string' 
-          ? new Date(knowledge.postedAt) 
+      const date = knowledge.postedAt
+        ? (typeof knowledge.postedAt === 'string'
+          ? new Date(knowledge.postedAt)
           : new Date(knowledge.postedAt))
         : new Date();
       const dateStr = date.toLocaleDateString('ja-JP');
-      
+
       const tags = knowledge.tags || [];
-      const tagsHtml = tags.map(tag => 
+      const tagsHtml = tags.map(tag =>
         `<span class="card-tag">${tag}</span>`
       ).join('');
-      
+
       return `
         <div class="knowledge-card" onclick="showDetail(${knowledge.id || 0})">
-          ${knowledge.thumbnailUrl ? 
-            `<img src="${knowledge.thumbnailUrl}" alt="${knowledge.title || ''}" class="card-thumbnail" onerror="this.style.display='none'">` : 
-            '<div class="card-thumbnail" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>'
-          }
+          ${knowledge.thumbnailUrl ?
+          `<img src="${knowledge.thumbnailUrl}" alt="${knowledge.title || ''}" class="card-thumbnail" onerror="this.style.display='none'">` :
+          '<div class="card-thumbnail" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);"></div>'
+        }
           <div class="card-content">
             <div class="card-title">${knowledge.title || 'タイトルなし'}</div>
             <div class="card-tags">${tagsHtml}</div>
             <div class="card-meta">
               <span>${knowledge.postedBy || '不明'} - ${dateStr}</span>
-              <button class="like-button" onclick="event.stopPropagation(); addLike(${knowledge.id || 0})">
+              <button id="like-btn-${knowledge.id}" class="like-button" onclick="event.stopPropagation(); addLike(${knowledge.id || 0})">
                 ❤️ ${knowledge.likes || 0}
               </button>
             </div>
@@ -643,13 +693,13 @@
         </div>
       `;
     }
-    
+
     // タグフィルタを更新
     function updateTagFilter(knowledgeList) {
       if (!knowledgeList || !Array.isArray(knowledgeList)) {
         return;
       }
-      
+
       const tagsSet = new Set();
       knowledgeList.forEach(k => {
         if (k && k.tags && Array.isArray(k.tags)) {
@@ -660,17 +710,17 @@
           });
         }
       });
-      
+
       const tagsFilter = document.getElementById('tagsFilter');
       if (!tagsFilter) {
         return;
       }
-      
-      tagsFilter.innerHTML = Array.from(tagsSet).map(tag => 
+
+      tagsFilter.innerHTML = Array.from(tagsSet).map(tag =>
         `<span class="tag-chip ${selectedTags.includes(tag) ? 'active' : ''}" onclick="toggleTag('${tag}')">${tag}</span>`
       ).join('');
     }
-    
+
     // タグをトグル
     function toggleTag(tag) {
       const index = selectedTags.indexOf(tag);
@@ -681,48 +731,44 @@
       }
       filterKnowledge();
     }
-    
+
     // 検索
     function searchKnowledge() {
       filterKnowledge();
     }
-    
+
     // フィルタリング
     function filterKnowledge() {
-      const searchWord = document.getElementById('searchInput').value;
-      
-      const filters = {};
-      if (searchWord) {
-        filters.searchWord = searchWord;
+      const searchWord = document.getElementById('searchInput').value.toLowerCase();
+
+      // ローカルでフィルタリングを実行
+      const filteredList = allKnowledge.filter(k => {
+        // キーワード検索
+        let matchesSearch = true;
+        if (searchWord) {
+          matchesSearch =
+            (k.title && k.title.toLowerCase().includes(searchWord)) ||
+            (k.comment && k.comment.toLowerCase().includes(searchWord)) ||
+            (k.url && k.url.toLowerCase().includes(searchWord));
+        }
+
+        // タグ検索
+        let matchesTags = true;
+        if (selectedTags.length > 0) {
+          matchesTags = selectedTags.some(tag => k.tags && k.tags.includes(tag));
+        }
+
+        return matchesSearch && matchesTags;
+      });
+
+      // 結果を表示（createKnowledgeCardで再描画）
+      const grid = document.getElementById('knowledgeGrid');
+      if (filteredList.length === 0) {
+        grid.innerHTML = '<div class="loading">条件に一致するナレッジが見つかりませんでした</div>';
+      } else {
+        grid.innerHTML = filteredList.map(k => createKnowledgeCard(k)).join('');
       }
-      if (selectedTags.length > 0) {
-        filters.tags = selectedTags;
-      }
-      
-      google.script.run
-        .withSuccessHandler(function(result) {
-          // JSON文字列として返ってくる場合の処理
-          let knowledgeList;
-          if (typeof result === 'string') {
-            try {
-              knowledgeList = JSON.parse(result);
-            } catch (e) {
-              console.error('Failed to parse JSON:', e);
-              showError('データの解析に失敗しました');
-              return;
-            }
-          } else if (Array.isArray(result)) {
-            knowledgeList = result;
-          } else {
-            console.error('Unexpected result type:', typeof result, result);
-            showError('予期しないデータ形式です');
-            return;
-          }
-          displayKnowledge(knowledgeList);
-        })
-        .withFailureHandler(showError)
-        .getKnowledgeList(filters);
-      
+
       // タグフィルタの表示を更新
       document.querySelectorAll('.tag-chip').forEach(chip => {
         const tag = chip.textContent;
@@ -733,60 +779,68 @@
         }
       });
     }
-    
+
     // 詳細を表示
     function showDetail(id) {
-      google.script.run
-        .withSuccessHandler(function(result) {
-          // JSON文字列として返ってくる場合の処理
-          let knowledge;
-          if (typeof result === 'string') {
-            try {
-              knowledge = JSON.parse(result);
-            } catch (e) {
-              console.error('Failed to parse JSON:', e);
-              showError('データの解析に失敗しました');
-              return;
+      // まずローカルのデータ（一覧取得済みのデータ）から探す
+      const knowledge = allKnowledge.find(k => k.id === id);
+
+      if (knowledge) {
+        console.log('Displaying detail from local data');
+        displayDetail(knowledge);
+      } else {
+        google.script.run
+          .withSuccessHandler(function (result) {
+            // JSON文字列として返ってくる場合の処理
+            let knowledge;
+            if (typeof result === 'string') {
+              try {
+                knowledge = JSON.parse(result);
+              } catch (e) {
+                console.error('Failed to parse JSON:', e);
+                showError('データの解析に失敗しました');
+                return;
+              }
+            } else {
+              knowledge = result;
             }
-          } else {
-            knowledge = result;
-          }
-          displayDetail(knowledge);
-        })
-        .withFailureHandler(showError)
-        .getKnowledgeDetail(id);
+            displayDetail(knowledge);
+          })
+          .withFailureHandler(showError)
+          .getKnowledgeDetail(id);
+      }
     }
-    
+
     // 詳細を表示（モーダル）
     function displayDetail(knowledge) {
       if (!knowledge || knowledge === null) {
         showError('ナレッジが見つかりませんでした');
         return;
       }
-      
+
       const modal = document.getElementById('detailModal');
       const modalTitle = document.getElementById('modalTitle');
       const modalBody = document.getElementById('modalBody');
-      
+
       modalTitle.textContent = knowledge.title;
-      
+
       // postedAtが文字列の場合もDateオブジェクトに変換
-      const date = knowledge.postedAt 
-        ? (typeof knowledge.postedAt === 'string' 
-          ? new Date(knowledge.postedAt) 
+      const date = knowledge.postedAt
+        ? (typeof knowledge.postedAt === 'string'
+          ? new Date(knowledge.postedAt)
           : new Date(knowledge.postedAt))
         : new Date();
       const dateStr = date.toLocaleDateString('ja-JP') + ' ' + date.toLocaleTimeString('ja-JP');
-      
-      const tagsHtml = knowledge.tags.map(tag => 
+
+      const tagsHtml = knowledge.tags.map(tag =>
         `<span class="card-tag">${tag}</span>`
       ).join('');
-      
+
       const commentsHtml = (knowledge.comments || []).map(comment => {
         // postedAtが文字列の場合もDateオブジェクトに変換
-        const commentDate = comment.postedAt 
-          ? (typeof comment.postedAt === 'string' 
-            ? new Date(comment.postedAt) 
+        const commentDate = comment.postedAt
+          ? (typeof comment.postedAt === 'string'
+            ? new Date(comment.postedAt)
             : new Date(comment.postedAt))
           : new Date();
         return `
@@ -796,7 +850,7 @@
           </div>
         `;
       }).join('');
-      
+
       modalBody.innerHTML = `
         ${knowledge.thumbnailUrl ? `<img src="${knowledge.thumbnailUrl}" alt="${knowledge.title}" style="width: 100%; max-height: 300px; object-fit: cover; border-radius: 5px; margin-bottom: 20px;">` : ''}
         <p><strong>URL:</strong> <a href="${knowledge.url}" target="_blank">${knowledge.url}</a></p>
@@ -815,7 +869,7 @@
           </div>
         </div>
         <div style="display: flex; gap: 10px; margin-top: 20px;">
-          <button class="like-button" onclick="addLike(${knowledge.id})" style="flex: 1;">
+          <button id="modal-like-btn-${knowledge.id}" class="like-button" onclick="addLike(${knowledge.id})" style="flex: 1;">
             ❤️ いいね ${knowledge.likes}
           </button>
           <button onclick="openEditModal(${knowledge.id})" style="padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold;">
@@ -823,27 +877,27 @@
           </button>
         </div>
       `;
-      
+
       modal.classList.add('active');
     }
-    
+
     // モーダルを閉じる
     function closeModal() {
       document.getElementById('detailModal').classList.remove('active');
     }
-    
+
     // コメントを投稿
     function submitComment(knowledgeId) {
       const commentText = document.getElementById('newComment').value;
       const author = document.getElementById('commentAuthor').value || '匿名';
-      
+
       if (!commentText.trim()) {
         alert('コメントを入力してください');
         return;
       }
-      
+
       google.script.run
-        .withSuccessHandler(function(success) {
+        .withSuccessHandler(function (success) {
           if (success) {
             document.getElementById('newComment').value = '';
             document.getElementById('commentAuthor').value = '';
@@ -855,42 +909,36 @@
         .withFailureHandler(showError)
         .addComment(knowledgeId, commentText, author);
     }
-    
+
     // いいねを追加
     function addLike(knowledgeId) {
       google.script.run
-        .withSuccessHandler(function(newLikes) {
-          // いいね数を更新
-          const likeButtons = document.querySelectorAll('.like-button');
-          likeButtons.forEach(btn => {
-            if (btn.textContent.includes('❤️')) {
-              // いいね数を更新
-              const currentText = btn.textContent;
-              const match = currentText.match(/❤️\s*(\d+)/);
-              if (match) {
-                btn.textContent = `❤️ ${newLikes}`;
-              } else {
-                btn.textContent = `❤️ ${newLikes}`;
-              }
-            }
-          });
-          
-          // モーダルが開いている場合は、詳細を再読み込み
-          const modal = document.getElementById('detailModal');
-          if (modal && modal.classList.contains('active')) {
-            showDetail(knowledgeId);
-          } else {
-            // モーダルが閉じている場合は、一覧を再読み込み
-            loadKnowledge();
+        .withSuccessHandler(function (newLikes) {
+          // 一覧のカードのいいねボタンを更新
+          const cardBtn = document.getElementById(`like-btn-${knowledgeId}`);
+          if (cardBtn) {
+            cardBtn.textContent = `❤️ ${newLikes}`;
+          }
+
+          // モーダルのいいねボタンを更新
+          const modalBtn = document.getElementById(`modal-like-btn-${knowledgeId}`);
+          if (modalBtn) {
+            modalBtn.textContent = `❤️ いいね ${newLikes}`;
+          }
+
+          // ローカルデータ（allKnowledge）も更新しておく（次回の詳細表示のため）
+          const localData = allKnowledge.find(k => k.id === knowledgeId);
+          if (localData) {
+            localData.likes = newLikes;
           }
         })
-        .withFailureHandler(function(error) {
+        .withFailureHandler(function (error) {
           console.error('Error adding like:', error);
           showError('いいねの追加に失敗しました');
         })
         .addLike(knowledgeId);
     }
-    
+
     // エラーを表示
     function showError(error) {
       console.error('showError called with:', error);
@@ -898,9 +946,9 @@
       const errorMessage = error?.message || error?.toString() || 'Unknown error';
       grid.innerHTML = `<div class="error">エラーが発生しました: ${errorMessage}</div>`;
     }
-    
+
     // モーダルの外側をクリックで閉じる
-    window.onclick = function(event) {
+    window.onclick = function (event) {
       const detailModal = document.getElementById('detailModal');
       const addModal = document.getElementById('addModal');
       const editModal = document.getElementById('editModal');
@@ -914,23 +962,23 @@
         closeEditModal();
       }
     }
-    
+
     // 追加モーダルを開く
     function openAddModal() {
       document.getElementById('addModal').classList.add('active');
       // フォームをリセット
       document.getElementById('addKnowledgeForm').reset();
     }
-    
+
     // 追加モーダルを閉じる
     function closeAddModal() {
       document.getElementById('addModal').classList.remove('active');
     }
-    
+
     // ナレッジを追加
     function submitKnowledge(event) {
       event.preventDefault();
-      
+
       const knowledge = {
         title: document.getElementById('addTitle').value.trim(),
         url: document.getElementById('addUrl').value.trim(),
@@ -939,21 +987,21 @@
         postedBy: document.getElementById('addPostedBy').value.trim(),
         thumbnailUrl: document.getElementById('addThumbnailUrl').value.trim(),
       };
-      
+
       // バリデーション
       if (!knowledge.title || !knowledge.url || !knowledge.postedBy) {
         alert('タイトル、URL、投稿者は必須項目です');
         return;
       }
-      
+
       // 送信ボタンを無効化
       const submitButton = event.target.querySelector('button[type="submit"]');
       const originalText = submitButton.textContent;
       submitButton.disabled = true;
       submitButton.textContent = '追加中...';
-      
+
       google.script.run
-        .withSuccessHandler(function(result) {
+        .withSuccessHandler(function (result) {
           try {
             const response = typeof result === 'string' ? JSON.parse(result) : result;
             if (response.success) {
@@ -970,7 +1018,7 @@
           submitButton.disabled = false;
           submitButton.textContent = originalText;
         })
-        .withFailureHandler(function(error) {
+        .withFailureHandler(function (error) {
           console.error('Error adding knowledge:', error);
           alert('エラー: ' + (error?.message || 'ナレッジの追加に失敗しました'));
           submitButton.disabled = false;
@@ -978,12 +1026,12 @@
         })
         .addKnowledge(knowledge);
     }
-    
+
     // 編集モーダルを開く
     function openEditModal(knowledgeId) {
       // まず詳細を取得
       google.script.run
-        .withSuccessHandler(function(result) {
+        .withSuccessHandler(function (result) {
           let knowledge;
           if (typeof result === 'string') {
             try {
@@ -996,12 +1044,12 @@
           } else {
             knowledge = result;
           }
-          
+
           if (!knowledge || knowledge === null) {
             alert('ナレッジが見つかりませんでした');
             return;
           }
-          
+
           // フォームにデータをセット
           document.getElementById('editKnowledgeId').value = knowledgeId;
           document.getElementById('editTitle').value = knowledge.title || '';
@@ -1010,26 +1058,26 @@
           document.getElementById('editTags').value = (knowledge.tags || []).join(',');
           document.getElementById('editPostedBy').value = knowledge.postedBy || '';
           document.getElementById('editThumbnailUrl').value = knowledge.thumbnailUrl || '';
-          
+
           // モーダルを開く
           document.getElementById('editModal').classList.add('active');
         })
-        .withFailureHandler(function(error) {
+        .withFailureHandler(function (error) {
           console.error('Error loading knowledge for edit:', error);
           alert('ナレッジの読み込みに失敗しました');
         })
         .getKnowledgeDetail(knowledgeId);
     }
-    
+
     // 編集モーダルを閉じる
     function closeEditModal() {
       document.getElementById('editModal').classList.remove('active');
     }
-    
+
     // ナレッジを更新
     function submitUpdate(event) {
       event.preventDefault();
-      
+
       const knowledgeId = parseInt(document.getElementById('editKnowledgeId').value);
       const knowledge = {
         title: document.getElementById('editTitle').value.trim(),
@@ -1039,21 +1087,21 @@
         postedBy: document.getElementById('editPostedBy').value.trim(),
         thumbnailUrl: document.getElementById('editThumbnailUrl').value.trim(),
       };
-      
+
       // バリデーション
       if (!knowledge.title || !knowledge.url || !knowledge.postedBy) {
         alert('タイトル、URL、投稿者は必須項目です');
         return;
       }
-      
+
       // 送信ボタンを無効化
       const submitButton = event.target.querySelector('button[type="submit"]');
       const originalText = submitButton.textContent;
       submitButton.disabled = true;
       submitButton.textContent = '更新中...';
-      
+
       google.script.run
-        .withSuccessHandler(function(result) {
+        .withSuccessHandler(function (result) {
           try {
             const response = typeof result === 'string' ? JSON.parse(result) : result;
             if (response.success) {
@@ -1071,7 +1119,7 @@
           submitButton.disabled = false;
           submitButton.textContent = originalText;
         })
-        .withFailureHandler(function(error) {
+        .withFailureHandler(function (error) {
           console.error('Error updating knowledge:', error);
           alert('エラー: ' + (error?.message || 'ナレッジの更新に失敗しました'));
           submitButton.disabled = false;
@@ -1081,5 +1129,5 @@
     }
   </script>
 </body>
-</html>
 
+</html>
