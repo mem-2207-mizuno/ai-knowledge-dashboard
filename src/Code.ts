@@ -17,6 +17,44 @@ function doGet(
   const template = HtmlService.createTemplateFromFile('index');
   template.spreadsheetId = Config.getSpreadsheetId();
 
+  // URLパラメータからIDを取得（数値のみを有効とする）
+  let initialId: number | null = null;
+  const singleIdParam =
+    e.parameter && typeof e.parameter.id === 'string'
+      ? e.parameter.id
+      : null;
+  const multiIdParam =
+    e.parameters &&
+    e.parameters.id &&
+    Array.isArray(e.parameters.id) &&
+    e.parameters.id.length > 0
+      ? e.parameters.id[0]
+      : null;
+  const candidateId = singleIdParam || multiIdParam;
+
+  if (candidateId) {
+    const trimmedId = candidateId.trim();
+    if (/^\d+$/.test(trimmedId)) {
+      initialId = parseInt(trimmedId, 10);
+    } else {
+      console.log(`Ignoring non-numeric id parameter: ${trimmedId}`);
+    }
+  }
+
+  // nullの場合は 'null' という文字列ではなく null そのものを渡すが、
+  // テンプレートエンジンでの評価エラーを避けるため、テンプレート側での参照は慎重に行う必要がある
+  (template as any).initialId = initialId;
+
+  // アプリケーションのURLを取得してテンプレートに渡す
+  // JSON.stringifyしない（エスケープ回避）
+  // 取得できない場合は空文字をセット
+  try {
+    (template as any).appUrl = ScriptApp.getService().getUrl();
+  } catch (e) {
+    console.error('Failed to get app URL', e);
+    (template as any).appUrl = '';
+  }
+
   // 初期データを取得してテンプレートに渡す（SSR的な挙動）
   // キャッシュが効いているため高速に取得できるはず
   const initialData = KnowledgeService.getList();

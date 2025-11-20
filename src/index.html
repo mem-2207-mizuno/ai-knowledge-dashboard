@@ -362,9 +362,14 @@
 </head>
 
 <body>
-  <!-- サーバーサイドからの初期データを埋め込むための非表示要素 -->
-  <!-- エスケープなしで出力するために ?!= を使用 -->
-  <script id="initialData" type="application/json"><?!= initialData ?></script>
+  <!-- サーバーサイドからの初期データをグローバル変数として定義 -->
+  <script>
+    const SERVER_DATA = {
+      initialData: <?!= initialData ?>,
+      initialId: <?= initialId !== null ? initialId : 'null' ?>,
+      appUrl: "<?!= appUrl ?>"
+    };
+  </script>
 
   <div class="container">
     <header>
@@ -539,6 +544,28 @@
     let allKnowledge = [];
     let selectedTags = [];
 
+    // IDの正規化（数値のみを有効とする）
+    function normalizeKnowledgeId(rawId) {
+      if (rawId === null || rawId === undefined) {
+        return null;
+      }
+
+      if (typeof rawId === 'number') {
+        return Number.isFinite(rawId) && rawId > 0 ? Math.floor(rawId) : null;
+      }
+
+      if (typeof rawId === 'string') {
+        const trimmed = rawId.trim();
+        if (trimmed === '') {
+          return null;
+        }
+        const parsed = parseInt(trimmed, 10);
+        return Number.isNaN(parsed) || parsed <= 0 ? null : parsed;
+      }
+
+      return null;
+    }
+
     // MarkdownをHTMLに変換する関数
     function renderMarkdown(markdown) {
       if (!markdown || typeof markdown !== 'string') {
@@ -567,24 +594,44 @@
 
     // ページ読み込み時にナレッジ一覧を取得
     window.onload = function () {
+      // 初期ロード時のIDチェック
+      // サーバーから渡されたIDのみを信頼し、クライアント側でのURL解析は行わない
+      // (GASのiframe URLには予期せぬパラメータが含まれる可能性があるため)
+      let initialId = normalizeKnowledgeId(SERVER_DATA.initialId);
+      if (initialId === null) {
+        console.log('No valid initialId provided by server.');
+      } else {
+        console.log('Parsed initialId from server:', initialId);
+      }
+
       // サーバーサイドから渡された初期データがある場合はそれを使用
-      const initialDataElement = document.getElementById('initialData');
-      if (initialDataElement && initialDataElement.textContent) {
+      const initialData = SERVER_DATA.initialData;
+      if (initialData) {
         try {
-          const initialData = JSON.parse(initialDataElement.textContent);
           console.log('Loaded initial data from server');
           displayKnowledge(initialData);
+
+          // 初期IDがある場合は詳細を表示
+          if (initialId !== null) {
+            console.log('Attempting to show initial detail for ID:', initialId);
+            // 少し遅延させてデータ描画を確実にする
+            setTimeout(() => {
+              showDetail(initialId, false);
+            }, 100);
+          }
         } catch (e) {
-          console.error('Failed to parse initial data:', e);
-          loadKnowledge(); // パース失敗時は通常通り取得
+          console.error('Failed to process initial data:', e);
+          loadKnowledge(initialId); // 失敗時は通常通り取得
         }
       } else {
-        loadKnowledge();
+        loadKnowledge(initialId);
       }
+
+      // ... (popstateイベントはそのまま)
     };
 
     // ナレッジ一覧を読み込む
-    function loadKnowledge() {
+    function loadKnowledge(openId = null) {
       console.log('Loading knowledge list...');
       google.script.run
         .withSuccessHandler(function (result) {
@@ -615,6 +662,11 @@
           }
 
           displayKnowledge(knowledgeList);
+
+          const normalizedOpenId = normalizeKnowledgeId(openId);
+          if (normalizedOpenId !== null) {
+            showDetail(normalizedOpenId, false);
+          }
         })
         .withFailureHandler(function (error) {
           console.error('Failure handler called with error:', error);
@@ -781,14 +833,35 @@
     }
 
     // 詳細を表示
-    function showDetail(id) {
+    function showDetail(id, updateHistory = true) {
+      const normalizedId = normalizeKnowledgeId(id);
+      if (normalizedId === null) {
+        console.warn('showDetail was called with an invalid ID:', id);
+        return;
+      }
+
+      // URL更新
+      if (updateHistory) {
+        // GASのexec URLパラメータ形式に合わせる
+        // 現在のURLにパラメータを追加/置換
+        const url = new URL(window.location.href);
+        url.searchParams.set('id', normalizedId.toString());
+        // pushStateで履歴に追加
+        if (url.href !== window.location.href) {
+          window.history.pushState({ id: normalizedId }, '', url.search);
+        }
+      }
+
       // まずローカルのデータ（一覧取得済みのデータ）から探す
-      const knowledge = allKnowledge.find(k => k.id === id);
+      // 型変換して比較 (==) を使用して柔軟にマッチさせる
+      console.log('Searching knowledge with id:', normalizedId);
+      const knowledge = allKnowledge.find(k => k.id == normalizedId);
 
       if (knowledge) {
-        console.log('Displaying detail from local data');
+        console.log('Displaying detail from local data:', knowledge.title);
         displayDetail(knowledge);
       } else {
+        console.log('Knowledge not found in local data, fetching from server...');
         google.script.run
           .withSuccessHandler(function (result) {
             // JSON文字列として返ってくる場合の処理
@@ -798,7 +871,7 @@
                 knowledge = JSON.parse(result);
               } catch (e) {
                 console.error('Failed to parse JSON:', e);
-                showError('データの解析に失敗しました');
+                alert('データの解析に失敗しました');
                 return;
               }
             } else {
@@ -806,8 +879,11 @@
             }
             displayDetail(knowledge);
           })
-          .withFailureHandler(showError)
-          .getKnowledgeDetail(id);
+          .withFailureHandler(function (error) {
+            console.error('Failed to fetch detail:', error);
+            alert('詳細データの取得に失敗しました。ID: ' + normalizedId);
+          })
+          .getKnowledgeDetail(normalizedId);
       }
     }
 
@@ -872,6 +948,9 @@
           <button id="modal-like-btn-${knowledge.id}" class="like-button" onclick="addLike(${knowledge.id})" style="flex: 1;">
             ❤️ いいね ${knowledge.likes}
           </button>
+          <button onclick="copyShareLink(${knowledge.id})" style="padding: 10px 20px; background: #f5f5f5; color: #333; border: 1px solid #ddd; border-radius: 5px; cursor: pointer; font-size: 16px;">
+             🔗 リンクをコピー
+          </button>
           <button onclick="openEditModal(${knowledge.id})" style="padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold;">
             編集
           </button>
@@ -883,7 +962,34 @@
 
     // モーダルを閉じる
     function closeModal() {
+      // URLを戻す
+      const url = new URL(window.location.href);
+      if (url.searchParams.has('id')) {
+        url.searchParams.delete('id');
+        // クエリパラメータがない場合は ? も消したいが、GASのURL構造上 search だけ置換でOKか確認
+        // pushStateの第三引数はパスまたはクエリ文字列
+        window.history.pushState({ id: null }, '', url.pathname + url.search);
+      }
       document.getElementById('detailModal').classList.remove('active');
+    }
+
+    // 共有リンクをコピー
+    function copyShareLink(id) {
+      const normalizedId = normalizeKnowledgeId(id);
+      if (normalizedId === null) {
+        alert('共有リンクを作成できませんでした（IDが不正です）');
+        return;
+      }
+
+      const baseUrl = SERVER_DATA.appUrl || window.location.href.split('?')[0];
+      const shareUrl = `${baseUrl}?id=${normalizedId}`;
+
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        alert('共有用URLをクリップボードにコピーしました！\n' + shareUrl);
+      }).catch(err => {
+        console.error('Failed to copy:', err);
+        prompt('以下のURLをコピーしてください:', shareUrl);
+      });
     }
 
     // コメントを投稿
@@ -942,9 +1048,20 @@
     // エラーを表示
     function showError(error) {
       console.error('showError called with:', error);
+
+      // ユーザーフレンドリーなメッセージに変換
+      const errorMessage = error?.message || error?.toString() || '不明なエラー';
+
+      // 既存の一覧を消さずに、トーストまたはアラートで通知
+      // もし詳細モーダルが開こうとしていたなら、モーダル内でエラーを出すか閉じる
+      alert(`エラーが発生しました: ${errorMessage}`);
+
+      // もしローディング表示中なら消す
       const grid = document.getElementById('knowledgeGrid');
-      const errorMessage = error?.message || error?.toString() || 'Unknown error';
-      grid.innerHTML = `<div class="error">エラーが発生しました: ${errorMessage}</div>`;
+      if (grid && grid.innerHTML.includes('class="loading"')) {
+        // まだデータが何もない（ローディング中）場合はエラーを表示しても良い
+        grid.innerHTML = `<div class="error">データの読み込みに失敗しました: ${errorMessage}</div>`;
+      }
     }
 
     // モーダルの外側をクリックで閉じる
