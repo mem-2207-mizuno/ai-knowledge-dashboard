@@ -20,9 +20,7 @@ function doGet(
   // URLパラメータからIDを取得（数値のみを有効とする）
   let initialId: number | null = null;
   const singleIdParam =
-    e.parameter && typeof e.parameter.id === 'string'
-      ? e.parameter.id
-      : null;
+    e.parameter && typeof e.parameter.id === 'string' ? e.parameter.id : null;
   const multiIdParam =
     e.parameters &&
     e.parameters.id &&
@@ -91,11 +89,14 @@ function getKnowledgeDetail(id: number): string {
  */
 function addKnowledge(knowledge: {
   title: string;
-  url: string;
+  url?: string;
   comment: string;
   tags: string;
   postedBy: string;
   thumbnailUrl?: string;
+  category?: string;
+  status?: string;
+  metadata?: Record<string, any>;
 }): string {
   const result = KnowledgeService.add(knowledge);
   return JSON.stringify(result);
@@ -108,11 +109,14 @@ function updateKnowledge(
   knowledgeId: number,
   knowledge: {
     title: string;
-    url: string;
+    url?: string;
     comment: string;
     tags: string;
     postedBy: string;
     thumbnailUrl?: string;
+    category?: string;
+    status?: string;
+    metadata?: Record<string, any>;
   }
 ): string {
   const result = KnowledgeService.update(knowledgeId, knowledge);
@@ -133,10 +137,9 @@ function addComment(
 /**
  * いいねを追加するAPI
  */
-function addLike(knowledgeId: number): number {
-  return KnowledgeService.addLike(knowledgeId);
+function addLike(knowledgeId: number, clientId?: string): number {
+  return KnowledgeService.addLike(knowledgeId, clientId);
 }
-
 /**
  * デバッグ用: スプレッドシートへのアクセステスト
  */

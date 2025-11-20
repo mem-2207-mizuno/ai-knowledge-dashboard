@@ -544,6 +544,164 @@
     let allKnowledge = [];
     let selectedTags = [];
 
+    const CLIENT_ID_STORAGE_KEY = 'ai-knowledge-dashboard-client-id';
+    function ensureClientId() {
+      try {
+        let clientId = localStorage.getItem(CLIENT_ID_STORAGE_KEY);
+        if (!clientId) {
+          clientId = `client-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
+          localStorage.setItem(CLIENT_ID_STORAGE_KEY, clientId);
+        }
+        return clientId;
+      } catch (error) {
+        console.warn('Failed to access localStorage for client ID:', error);
+        return `client-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
+      }
+    }
+    const CLIENT_ID = ensureClientId();
+    const LIKED_STORAGE_KEY = 'ai-knowledge-dashboard-liked-ids';
+    let likedKnowledgeIds = loadLikedKnowledgeIds();
+
+    function loadLikedKnowledgeIds() {
+      try {
+        const stored = localStorage.getItem(LIKED_STORAGE_KEY);
+        if (!stored) {
+          return new Set();
+        }
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          return new Set(parsed.map(id => id.toString()));
+        }
+      } catch (error) {
+        console.warn('Failed to load liked IDs from storage:', error);
+      }
+      return new Set();
+    }
+
+    function saveLikedKnowledgeIds() {
+      try {
+        localStorage.setItem(LIKED_STORAGE_KEY, JSON.stringify(Array.from(likedKnowledgeIds)));
+      } catch (error) {
+        console.warn('Failed to save liked IDs:', error);
+      }
+    }
+
+    function isKnowledgeLiked(id) {
+      if (!id) {
+        return false;
+      }
+      return likedKnowledgeIds.has(id.toString());
+    }
+
+    function markKnowledgeLiked(id) {
+      if (!id) {
+        return;
+      }
+      likedKnowledgeIds.add(id.toString());
+      saveLikedKnowledgeIds();
+    }
+
+    function findKnowledgeById(id) {
+      return allKnowledge.find(k => k.id == id);
+    }
+
+    function renderCommentItem(comment) {
+      if (!comment) {
+        return '';
+      }
+      const date = comment.postedAt
+        ? (typeof comment.postedAt === 'string'
+          ? new Date(comment.postedAt)
+          : new Date(comment.postedAt))
+        : new Date();
+      const statusLabel = comment.pending
+        ? '<span style="margin-left: 8px; color: #999; font-size: 0.9em;">送信中...</span>'
+        : '';
+      const tempAttr = comment.tempId ? `data-temp-id="${comment.tempId}"` : '';
+      return `
+        <div class="comment-item ${comment.pending ? 'comment-pending' : ''}" ${tempAttr}
+          style="padding: 10px; margin: 10px 0; background: #f5f5f5; border-radius: 5px; opacity: ${comment.pending ? '0.6' : '1'};">
+          <strong>${comment.author || '匿名'}</strong> - ${date.toLocaleString('ja-JP')} ${statusLabel}
+          <div class="markdown-content" style="margin-top: 10px;">${renderMarkdown(comment.text || '')}</div>
+        </div>
+      `;
+    }
+
+    function renderCommentsHtml(comments) {
+      if (!comments || comments.length === 0) {
+        return '<p>コメントはまだありません</p>';
+      }
+      return comments.map(comment => renderCommentItem(comment)).join('');
+    }
+
+    function refreshCommentsUI(knowledgeId) {
+      const knowledge = findKnowledgeById(knowledgeId);
+      if (!knowledge) {
+        return;
+      }
+      const commentsList = document.getElementById('commentsList');
+      if (!commentsList) {
+        return;
+      }
+      const comments = Array.isArray(knowledge.comments) ? knowledge.comments : [];
+      commentsList.innerHTML = renderCommentsHtml(comments);
+    }
+
+    function addOptimisticComment(knowledgeId, comment) {
+      const knowledge = findKnowledgeById(knowledgeId);
+      if (!knowledge) {
+        return;
+      }
+      if (!Array.isArray(knowledge.comments)) {
+        knowledge.comments = [];
+      }
+      knowledge.comments.push(comment);
+      refreshCommentsUI(knowledgeId);
+    }
+
+    function removeOptimisticComment(knowledgeId, tempId) {
+      const knowledge = findKnowledgeById(knowledgeId);
+      if (!knowledge || !Array.isArray(knowledge.comments)) {
+        return;
+      }
+      knowledge.comments = knowledge.comments.filter(comment => comment.tempId !== tempId);
+      refreshCommentsUI(knowledgeId);
+    }
+
+    function confirmOptimisticComment(knowledgeId, tempId) {
+      const knowledge = findKnowledgeById(knowledgeId);
+      if (!knowledge || !Array.isArray(knowledge.comments)) {
+        return;
+      }
+      const comment = knowledge.comments.find(c => c.tempId === tempId);
+      if (!comment) {
+        return;
+      }
+      comment.pending = false;
+      delete comment.tempId;
+      comment.postedAt = new Date();
+      refreshCommentsUI(knowledgeId);
+    }
+
+    function updateLikeDisplay(knowledgeId, likes, pending = false) {
+      const liked = isKnowledgeLiked(knowledgeId);
+      const cardBtn = document.getElementById(`like-btn-${knowledgeId}`);
+      if (cardBtn) {
+        cardBtn.textContent = `❤️ ${likes}`;
+        cardBtn.classList.toggle('liked', liked);
+        cardBtn.disabled = liked || pending;
+        cardBtn.style.opacity = pending ? '0.6' : '1';
+      }
+
+      const modalBtn = document.getElementById(`modal-like-btn-${knowledgeId}`);
+      if (modalBtn) {
+        modalBtn.textContent = `❤️ いいね ${likes}`;
+        modalBtn.classList.toggle('liked', liked);
+        modalBtn.disabled = liked || pending;
+        modalBtn.style.opacity = pending ? '0.6' : '1';
+      }
+    }
+
     // IDの正規化（数値のみを有効とする）
     function normalizeKnowledgeId(rawId) {
       if (rawId === null || rawId === undefined) {
@@ -693,7 +851,11 @@
         return;
       }
 
-      allKnowledge = knowledgeList;
+      allKnowledge = knowledgeList.map(k => ({
+        ...k,
+        likePending: false,
+        comments: Array.isArray(k.comments) ? k.comments.map(comment => ({ ...comment })) : [],
+      }));
 
       if (knowledgeList.length === 0) {
         grid.innerHTML = '<div class="loading">ナレッジが見つかりませんでした</div>';
@@ -701,10 +863,10 @@
       }
 
       // タグフィルタを更新
-      updateTagFilter(knowledgeList);
+      updateTagFilter(allKnowledge);
 
       // カードを生成
-      grid.innerHTML = knowledgeList.map(k => createKnowledgeCard(k)).join('');
+      grid.innerHTML = allKnowledge.map(k => createKnowledgeCard(k)).join('');
     }
 
     // ナレッジカードを作成
@@ -726,6 +888,10 @@
         `<span class="card-tag">${tag}</span>`
       ).join('');
 
+      const liked = knowledge.id ? isKnowledgeLiked(knowledge.id) : false;
+      const likeButtonClass = `like-button ${liked ? 'liked' : ''}`;
+      const likeButtonText = `❤️ ${knowledge.likes || 0}`;
+      const likeButtonDisabled = liked ? 'disabled' : '';
       return `
         <div class="knowledge-card" onclick="showDetail(${knowledge.id || 0})">
           ${knowledge.thumbnailUrl ?
@@ -737,8 +903,9 @@
             <div class="card-tags">${tagsHtml}</div>
             <div class="card-meta">
               <span>${knowledge.postedBy || '不明'} - ${dateStr}</span>
-              <button id="like-btn-${knowledge.id}" class="like-button" onclick="event.stopPropagation(); addLike(${knowledge.id || 0})">
-                ❤️ ${knowledge.likes || 0}
+              <button id="like-btn-${knowledge.id}" class="${likeButtonClass}" data-knowledge-id="${knowledge.id}"
+                onclick="event.stopPropagation(); addLike(${knowledge.id || 0})" ${likeButtonDisabled}>
+                ${likeButtonText}
               </button>
             </div>
           </div>
@@ -894,6 +1061,13 @@
         return;
       }
 
+      const localIndex = allKnowledge.findIndex(k => k.id == knowledge.id);
+      if (localIndex === -1) {
+        allKnowledge.push(knowledge);
+      } else {
+        allKnowledge[localIndex] = knowledge;
+      }
+
       const modal = document.getElementById('detailModal');
       const modalTitle = document.getElementById('modalTitle');
       const modalBody = document.getElementById('modalBody');
@@ -912,20 +1086,12 @@
         `<span class="card-tag">${tag}</span>`
       ).join('');
 
-      const commentsHtml = (knowledge.comments || []).map(comment => {
-        // postedAtが文字列の場合もDateオブジェクトに変換
-        const commentDate = comment.postedAt
-          ? (typeof comment.postedAt === 'string'
-            ? new Date(comment.postedAt)
-            : new Date(comment.postedAt))
-          : new Date();
-        return `
-          <div style="padding: 10px; margin: 10px 0; background: #f5f5f5; border-radius: 5px;">
-            <strong>${comment.author || '匿名'}</strong> - ${commentDate.toLocaleString('ja-JP')}
-            <div class="markdown-content" style="margin-top: 10px;">${renderMarkdown(comment.text || '')}</div>
-          </div>
-        `;
-      }).join('');
+      const commentsArray = Array.isArray(knowledge.comments) ? knowledge.comments : [];
+      const commentsHtml = renderCommentsHtml(commentsArray);
+      const isLiked = knowledge.id ? isKnowledgeLiked(knowledge.id) : false;
+      const modalLikeLabel = `❤️ いいね ${knowledge.likes}`;
+      const modalLikeClass = `like-button ${isLiked ? 'liked' : ''}`;
+      const modalLikeDisabled = isLiked ? 'disabled' : '';
 
       modalBody.innerHTML = `
         ${knowledge.thumbnailUrl ? `<img src="${knowledge.thumbnailUrl}" alt="${knowledge.title}" style="width: 100%; max-height: 300px; object-fit: cover; border-radius: 5px; margin-bottom: 20px;">` : ''}
@@ -937,7 +1103,7 @@
         <div class="markdown-content">${renderMarkdown(knowledge.comment || '（説明なし）')}</div>
         <div style="margin: 20px 0;">
           <h3>コメント</h3>
-          <div id="commentsList">${commentsHtml || '<p>コメントはまだありません</p>'}</div>
+          <div id="commentsList">${commentsHtml}</div>
           <div style="margin-top: 20px;">
             <input type="text" id="newComment" placeholder="コメントを入力..." style="width: 70%; padding: 10px; border: 2px solid #ddd; border-radius: 5px;">
             <input type="text" id="commentAuthor" placeholder="お名前" style="width: 20%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; margin-left: 10px;">
@@ -945,8 +1111,8 @@
           </div>
         </div>
         <div style="display: flex; gap: 10px; margin-top: 20px;">
-          <button id="modal-like-btn-${knowledge.id}" class="like-button" onclick="addLike(${knowledge.id})" style="flex: 1;">
-            ❤️ いいね ${knowledge.likes}
+          <button id="modal-like-btn-${knowledge.id}" class="${modalLikeClass}" onclick="addLike(${knowledge.id})" style="flex: 1;" ${modalLikeDisabled}>
+            ${modalLikeLabel}
           </button>
           <button onclick="copyShareLink(${knowledge.id})" style="padding: 10px 20px; background: #f5f5f5; color: #333; border: 1px solid #ddd; border-radius: 5px; cursor: pointer; font-size: 16px;">
              🔗 リンクをコピー
@@ -958,6 +1124,7 @@
       `;
 
       modal.classList.add('active');
+      updateLikeDisplay(knowledge.id, knowledge.likes, knowledge.likePending);
     }
 
     // モーダルを閉じる
@@ -1002,47 +1169,71 @@
         return;
       }
 
+      const tempId = `temp-${knowledgeId}-${Date.now()}`;
+      const optimisticComment = {
+        tempId,
+        text: commentText,
+        author,
+        postedAt: new Date(),
+        pending: true,
+      };
+
+      document.getElementById('newComment').value = '';
+      document.getElementById('commentAuthor').value = '';
+      addOptimisticComment(knowledgeId, optimisticComment);
+
       google.script.run
         .withSuccessHandler(function (success) {
           if (success) {
-            document.getElementById('newComment').value = '';
-            document.getElementById('commentAuthor').value = '';
-            showDetail(knowledgeId);
+            confirmOptimisticComment(knowledgeId, tempId);
+            loadKnowledge(knowledgeId);
           } else {
+            removeOptimisticComment(knowledgeId, tempId);
             showError('コメントの投稿に失敗しました');
           }
         })
-        .withFailureHandler(showError)
+        .withFailureHandler(function (error) {
+          removeOptimisticComment(knowledgeId, tempId);
+          showError(error);
+        })
         .addComment(knowledgeId, commentText, author);
     }
 
     // いいねを追加
     function addLike(knowledgeId) {
+      const knowledge = findKnowledgeById(knowledgeId);
+      if (!knowledge) {
+        showError('ナレッジが見つかりませんでした');
+        return;
+      }
+      if (isKnowledgeLiked(knowledgeId)) {
+        return;
+      }
+
+      if (knowledge.likePending) {
+        return;
+      }
+
+      const originalLikes = knowledge.likes || 0;
+      knowledge.likePending = true;
+      knowledge.likes = originalLikes + 1;
+      updateLikeDisplay(knowledgeId, knowledge.likes, true);
+
       google.script.run
         .withSuccessHandler(function (newLikes) {
-          // 一覧のカードのいいねボタンを更新
-          const cardBtn = document.getElementById(`like-btn-${knowledgeId}`);
-          if (cardBtn) {
-            cardBtn.textContent = `❤️ ${newLikes}`;
-          }
-
-          // モーダルのいいねボタンを更新
-          const modalBtn = document.getElementById(`modal-like-btn-${knowledgeId}`);
-          if (modalBtn) {
-            modalBtn.textContent = `❤️ いいね ${newLikes}`;
-          }
-
-          // ローカルデータ（allKnowledge）も更新しておく（次回の詳細表示のため）
-          const localData = allKnowledge.find(k => k.id === knowledgeId);
-          if (localData) {
-            localData.likes = newLikes;
-          }
+          knowledge.likes = newLikes;
+          knowledge.likePending = false;
+          markKnowledgeLiked(knowledgeId);
+          updateLikeDisplay(knowledgeId, newLikes, false);
         })
         .withFailureHandler(function (error) {
           console.error('Error adding like:', error);
+          knowledge.likes = originalLikes;
+          knowledge.likePending = false;
+          updateLikeDisplay(knowledgeId, originalLikes, false);
           showError('いいねの追加に失敗しました');
         })
-        .addLike(knowledgeId);
+        .addLike(knowledgeId, CLIENT_ID);
     }
 
     // エラーを表示

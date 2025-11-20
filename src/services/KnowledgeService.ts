@@ -1,10 +1,64 @@
 import { SheetService } from './SheetService';
-import { parseComments } from '../utils';
-import { Knowledge, Comment } from '../types';
+import { Knowledge, Comment, TagRecord, PostCategory } from '../types';
+import { safeJsonParse, slugifyTag } from '../utils';
 
-// キャッシュキーの定数
+export const KNOWLEDGE_SHEET_NAMES = {
+  POSTS: 'Posts',
+  TAGS: 'Tags',
+  POST_TAGS: 'PostTags',
+  COMMENTS: 'Comments',
+  LIKES: 'Likes',
+};
+
+export const KNOWLEDGE_SHEET_HEADERS = {
+  POSTS: [
+    'id',
+    'category',
+    'title',
+    'content',
+    'tagsCache',
+    'postedBy',
+    'postedAt',
+    'updatedAt',
+    'likesCount',
+    'thumbnailUrl',
+    'status',
+    'metadataJson',
+  ],
+  TAGS: ['id', 'name', 'slug', 'color', 'aliases', 'createdAt'],
+  POST_TAGS: ['postId', 'tagId', 'createdAt'],
+  COMMENTS: ['id', 'postId', 'author', 'content', 'postedAt'],
+  LIKES: ['clientId', 'postId', 'likedAt'],
+};
+
 const CACHE_KEY_LIST = 'knowledge_list_cache';
-const CACHE_DURATION = 21600; // 6時間 (秒)
+const CACHE_DURATION = 21600; // 6 hours
+const DEFAULT_CATEGORY: PostCategory = 'article';
+const DEFAULT_STATUS = 'open';
+
+type SheetMap = {
+  spreadsheet: GoogleAppsScript.Spreadsheet.Spreadsheet;
+  posts: GoogleAppsScript.Spreadsheet.Sheet;
+  tags: GoogleAppsScript.Spreadsheet.Sheet;
+  postTags: GoogleAppsScript.Spreadsheet.Sheet;
+  comments: GoogleAppsScript.Spreadsheet.Sheet;
+  likes: GoogleAppsScript.Spreadsheet.Sheet;
+};
+
+interface PostRow {
+  id: number;
+  category: PostCategory;
+  title: string;
+  content: string;
+  tagsCache: string[];
+  postedBy: string;
+  postedAt: Date;
+  updatedAt: Date;
+  likesCount: number;
+  thumbnailUrl: string;
+  status: string;
+  metadata: Record<string, any>;
+}
 
 export class KnowledgeService {
   /**
@@ -19,6 +73,402 @@ export class KnowledgeService {
     }
   }
 
+  private static getSheets(): SheetMap {
+    const spreadsheet = SheetService.openSpreadsheet();
+
+    return {
+      spreadsheet,
+      posts: SheetService.getOrCreateSheet(
+        KNOWLEDGE_SHEET_NAMES.POSTS,
+        KNOWLEDGE_SHEET_HEADERS.POSTS,
+        spreadsheet
+      ),
+      tags: SheetService.getOrCreateSheet(
+        KNOWLEDGE_SHEET_NAMES.TAGS,
+        KNOWLEDGE_SHEET_HEADERS.TAGS,
+        spreadsheet
+      ),
+      postTags: SheetService.getOrCreateSheet(
+        KNOWLEDGE_SHEET_NAMES.POST_TAGS,
+        KNOWLEDGE_SHEET_HEADERS.POST_TAGS,
+        spreadsheet
+      ),
+      comments: SheetService.getOrCreateSheet(
+        KNOWLEDGE_SHEET_NAMES.COMMENTS,
+        KNOWLEDGE_SHEET_HEADERS.COMMENTS,
+        spreadsheet
+      ),
+      likes: SheetService.getOrCreateSheet(
+        KNOWLEDGE_SHEET_NAMES.LIKES,
+        KNOWLEDGE_SHEET_HEADERS.LIKES,
+        spreadsheet
+      ),
+    };
+  }
+
+  private static getSheetValues(
+    sheet: GoogleAppsScript.Spreadsheet.Sheet
+  ): any[][] {
+    const lastRow = sheet.getLastRow();
+    const lastColumn = sheet.getLastColumn();
+    if (lastRow < 2 || lastColumn === 0) {
+      return [];
+    }
+    return sheet.getRange(2, 1, lastRow - 1, lastColumn).getValues();
+  }
+
+  private static parseDate(value: any): Date {
+    if (value instanceof Date && !isNaN(value.getTime())) {
+      return value;
+    }
+    if (typeof value === 'string' && value) {
+      const parsed = new Date(value);
+      if (!isNaN(parsed.getTime())) {
+        return parsed;
+      }
+    }
+    return new Date();
+  }
+
+  private static parsePostRows(rows: any[][]): PostRow[] {
+    return rows
+      .map((row) => {
+        if (!row || row.length === 0) {
+          return null;
+        }
+        const id = Number(row[0]);
+        if (!id || Number.isNaN(id)) {
+          return null;
+        }
+        const category = (row[1] as PostCategory) || DEFAULT_CATEGORY;
+        const title = (row[2] as string) || '';
+        const content = (row[3] as string) || '';
+        const tagsCache = safeJsonParse<string[]>(row[4] as string, []);
+        const postedBy = (row[5] as string) || '匿名';
+        const postedAt = this.parseDate(row[6]);
+        const updatedAt = this.parseDate(row[7]);
+        const likesCount = Number(row[8]) || 0;
+        const thumbnailUrl = (row[9] as string) || '';
+        const status = (row[10] as string) || DEFAULT_STATUS;
+        const metadata = safeJsonParse<Record<string, any>>(
+          row[11] as string,
+          {}
+        );
+
+        return {
+          id,
+          category,
+          title,
+          content,
+          tagsCache,
+          postedBy,
+          postedAt,
+          updatedAt,
+          likesCount,
+          thumbnailUrl,
+          status,
+          metadata,
+        };
+      })
+      .filter((row): row is PostRow => row !== null);
+  }
+
+  private static loadTagRecords(
+    sheet: GoogleAppsScript.Spreadsheet.Sheet
+  ): TagRecord[] {
+    const rows = this.getSheetValues(sheet);
+    return rows
+      .map((row) => {
+        const id = Number(row[0]);
+        if (!id || Number.isNaN(id)) {
+          return null;
+        }
+        const name = (row[1] as string) || '';
+        if (!name) {
+          return null;
+        }
+        const slug = (row[2] as string) || slugifyTag(name);
+        const color = (row[3] as string) || undefined;
+        const aliases = safeJsonParse<string[]>(row[4] as string, []);
+
+        return {
+          id,
+          name,
+          slug,
+          color,
+          aliases,
+        };
+      })
+      .filter((tag): tag is TagRecord => tag !== null);
+  }
+
+  private static buildTagMap(records: TagRecord[]): Map<number, TagRecord> {
+    const map = new Map<number, TagRecord>();
+    records.forEach((tag) => {
+      map.set(tag.id, tag);
+    });
+    return map;
+  }
+
+  private static buildTagsByPost(
+    sheet: GoogleAppsScript.Spreadsheet.Sheet,
+    tagMap: Map<number, TagRecord>
+  ): Map<number, string[]> {
+    const rows = this.getSheetValues(sheet);
+    const tagsByPost = new Map<number, string[]>();
+
+    rows.forEach((row) => {
+      const postId = Number(row[0]);
+      const tagId = Number(row[1]);
+      if (!postId || !tagId || Number.isNaN(postId) || Number.isNaN(tagId)) {
+        return;
+      }
+      const tag = tagMap.get(tagId);
+      if (!tag) {
+        return;
+      }
+      const current = tagsByPost.get(postId) || [];
+      current.push(tag.name);
+      tagsByPost.set(postId, current);
+    });
+
+    return tagsByPost;
+  }
+
+  private static buildCommentsByPost(
+    sheet: GoogleAppsScript.Spreadsheet.Sheet
+  ): Map<number, Comment[]> {
+    const rows = this.getSheetValues(sheet);
+    const comments = new Map<number, Comment[]>();
+
+    rows.forEach((row) => {
+      const id = Number(row[0]);
+      const postId = Number(row[1]);
+      if (!postId || Number.isNaN(postId)) {
+        return;
+      }
+      const author = (row[2] as string) || '匿名';
+      const content = (row[3] as string) || '';
+      const postedAt = this.parseDate(row[4]);
+
+      const comment: Comment = {
+        id: Number.isNaN(id) ? undefined : id,
+        text: content,
+        author,
+        postedAt,
+      };
+
+      const current = comments.get(postId) || [];
+      current.push(comment);
+      comments.set(postId, current);
+    });
+
+    return comments;
+  }
+
+  private static buildKnowledgeObject(
+    post: PostRow,
+    tagNames: string[],
+    comments: Comment[]
+  ): Knowledge {
+    const metadata = post.metadata || {};
+    const primaryUrl =
+      metadata.url ||
+      metadata.primaryUrl ||
+      metadata.demoUrl ||
+      metadata.referenceUrl ||
+      '';
+    const tags = tagNames.length > 0 ? tagNames : post.tagsCache;
+
+    return {
+      id: post.id,
+      title: post.title,
+      url: primaryUrl,
+      comment: post.content || '',
+      tags,
+      postedAt: new Date(post.postedAt),
+      postedBy: post.postedBy,
+      comments: comments.map((comment) => ({
+        ...comment,
+        postedAt: new Date(comment.postedAt),
+      })),
+      thumbnailUrl: post.thumbnailUrl,
+      likes: post.likesCount,
+      category: post.category,
+      status: post.status,
+      metadata,
+    };
+  }
+
+  private static getNextId(
+    sheet: GoogleAppsScript.Spreadsheet.Sheet,
+    columnIndex = 1
+  ): number {
+    const lastRow = sheet.getLastRow();
+    if (lastRow < 2) {
+      return 1;
+    }
+    const values = sheet
+      .getRange(2, columnIndex, lastRow - 1, 1)
+      .getValues()
+      .map((row) => Number(row[0]))
+      .filter((value) => !Number.isNaN(value));
+    const max = values.length > 0 ? Math.max(...values) : 0;
+    return max + 1;
+  }
+
+  private static findRowById(
+    sheet: GoogleAppsScript.Spreadsheet.Sheet,
+    id: number
+  ): number | null {
+    const lastRow = sheet.getLastRow();
+    if (lastRow < 2) {
+      return null;
+    }
+    const values = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+    for (let i = 0; i < values.length; i++) {
+      const cellValue = Number(values[i][0]);
+      if (!Number.isNaN(cellValue) && cellValue === id) {
+        return i + 2; // convert to sheet row (1-based, account for header)
+      }
+    }
+    return null;
+  }
+
+  private static normalizeTagInput(tags: string | string[]): string[] {
+    if (!tags) {
+      return [];
+    }
+    if (Array.isArray(tags)) {
+      return tags
+        .map((tag) => tag.trim())
+        .filter((tag, index, arr) => tag && arr.indexOf(tag) === index);
+    }
+    return tags
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter((tag, index, arr) => tag && arr.indexOf(tag) === index);
+  }
+
+  private static getOrCreateTagIds(
+    tagNames: string[],
+    sheets: SheetMap
+  ): { ids: number[]; names: string[] } {
+    if (tagNames.length === 0) {
+      return { ids: [], names: [] };
+    }
+
+    const tagRecords = this.loadTagRecords(sheets.tags);
+    const existingBySlug = new Map<string, TagRecord>();
+    tagRecords.forEach((tag) => existingBySlug.set(tag.slug, tag));
+
+    const ids: number[] = [];
+    const normalizedNames: string[] = [];
+
+    tagNames.forEach((tagName) => {
+      const slug = slugifyTag(tagName);
+      if (!slug) {
+        return;
+      }
+      const existing = existingBySlug.get(slug);
+      if (existing) {
+        ids.push(existing.id);
+        normalizedNames.push(existing.name);
+      } else {
+        const newId = this.getNextId(sheets.tags);
+        const now = new Date();
+        sheets.tags.appendRow([
+          newId,
+          tagName,
+          slug,
+          '',
+          JSON.stringify([]),
+          now,
+        ]);
+        const record: TagRecord = {
+          id: newId,
+          name: tagName,
+          slug,
+          aliases: [],
+        };
+        existingBySlug.set(slug, record);
+        ids.push(newId);
+        normalizedNames.push(tagName);
+      }
+    });
+
+    return { ids, names: normalizedNames };
+  }
+
+  private static replacePostTags(
+    postId: number,
+    tagIds: number[],
+    sheet: GoogleAppsScript.Spreadsheet.Sheet
+  ) {
+    const lastRow = sheet.getLastRow();
+    if (lastRow >= 2) {
+      const values = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+      for (let i = values.length - 1; i >= 0; i--) {
+        const cellValue = Number(values[i][0]);
+        if (!Number.isNaN(cellValue) && cellValue === postId) {
+          sheet.deleteRow(i + 2);
+        }
+      }
+    }
+
+    tagIds.forEach((tagId) => {
+      sheet.appendRow([postId, tagId, new Date()]);
+    });
+  }
+
+  private static assembleKnowledgeList(): Knowledge[] {
+    const sheets = this.getSheets();
+    const posts = this.parsePostRows(this.getSheetValues(sheets.posts));
+    const tagRecords = this.loadTagRecords(sheets.tags);
+    const tagMap = this.buildTagMap(tagRecords);
+    const tagsByPost = this.buildTagsByPost(sheets.postTags, tagMap);
+    const commentsByPost = this.buildCommentsByPost(sheets.comments);
+
+    return posts.map((post) =>
+      this.buildKnowledgeObject(
+        post,
+        tagsByPost.get(post.id) || [],
+        commentsByPost.get(post.id) || []
+      )
+    );
+  }
+
+  private static applyFilters(
+    list: Knowledge[],
+    filters?: {
+      searchWord?: string;
+      tags?: string[];
+    }
+  ): Knowledge[] {
+    if (!filters) {
+      return list;
+    }
+    let result = list.slice();
+
+    if (filters.searchWord) {
+      const searchLower = filters.searchWord.toLowerCase();
+      result = result.filter(
+        (item) =>
+          (item.title && item.title.toLowerCase().includes(searchLower)) ||
+          (item.comment && item.comment.toLowerCase().includes(searchLower)) ||
+          (item.url && item.url.toLowerCase().includes(searchLower))
+      );
+    }
+
+    if (filters.tags && filters.tags.length > 0) {
+      result = result.filter((item) =>
+        filters.tags!.some((tag) => item.tags?.includes(tag))
+      );
+    }
+
+    return result;
+  }
+
   /**
    * ナレッジ一覧を取得する
    */
@@ -27,7 +477,6 @@ export class KnowledgeService {
     tags?: string[];
   }): Knowledge[] {
     try {
-      // フィルタがない場合のみキャッシュを使用
       const useCache =
         !filters ||
         (!filters.searchWord && (!filters.tags || filters.tags.length === 0));
@@ -37,7 +486,6 @@ export class KnowledgeService {
           const cache = CacheService.getScriptCache();
           const cachedData = cache.get(CACHE_KEY_LIST);
           if (cachedData) {
-            console.log('Returning cached data');
             return JSON.parse(cachedData);
           }
         } catch (e) {
@@ -45,112 +493,20 @@ export class KnowledgeService {
         }
       }
 
-      const sheet = SheetService.openSpreadsheet().getActiveSheet();
-
-      // データ範囲を取得
-      const dataRange = sheet.getDataRange();
-      if (!dataRange) {
-        console.log('Data range is empty, returning empty array');
-        return [];
-      }
-
-      const data = dataRange.getValues();
-      console.log('Data rows count:', data ? data.length : 0);
-
-      // データが空の場合
-      if (!data || data.length === 0) {
-        console.log('No data in spreadsheet, returning empty array');
-        return [];
-      }
-
-      // ヘッダー行のみの場合
-      if (data.length === 1) {
-        console.log('Only header row exists, returning empty array');
-        return [];
-      }
-
-      // ヘッダー行をスキップ
-      const rows = data.slice(1);
-      console.log('Processing rows:', rows.length);
-
-      let knowledgeList: any[] = rows
-        .filter((row) => row && row.length > 0 && row[0]) // 空行を除外
-        .map((row, index) => {
-          try {
-            // Dateオブジェクトを文字列に変換（Webアプリでのシリアライズ問題を回避）
-            const postedAt = row[4] ? new Date(row[4] as Date) : new Date();
-            const comments = parseComments((row[6] as string) || '');
-
-            // コメントのDateも文字列に変換
-            const commentsWithStringDates = comments.map((comment) => ({
-              text: comment.text,
-              author: comment.author,
-              postedAt:
-                comment.postedAt instanceof Date
-                  ? comment.postedAt.toISOString()
-                  : typeof comment.postedAt === 'string'
-                  ? comment.postedAt
-                  : new Date().toISOString(),
-            }));
-
-            return {
-              id: index + 1,
-              title: (row[0] as string) || '',
-              url: (row[1] as string) || '',
-              comment: (row[2] as string) || '',
-              tags:
-                (row[3] as string)?.split(',').map((tag) => tag.trim()) || [],
-              postedAt: postedAt.toISOString(), // DateをISO文字列に変換
-              postedBy: (row[5] as string) || '',
-              comments: commentsWithStringDates,
-              thumbnailUrl: (row[7] as string) || '',
-              likes: (row[8] as number) || 0,
-            };
-          } catch (error) {
-            console.error('Error parsing row:', row, error);
-            return null;
-          }
-        })
-        .filter((item) => item !== null); // nullを除外
-
-      console.log('Knowledge list created, count:', knowledgeList.length);
-
-      // フィルタがない場合はキャッシュに保存
-      if (useCache && knowledgeList.length > 0) {
+      const list = this.assembleKnowledgeList();
+      if (useCache && list.length > 0) {
         try {
-          // CacheServiceの上限(100KB)を考慮して、必要なら圧縮や分割が必要だが
-          // ここでは単純に保存する
           CacheService.getScriptCache().put(
             CACHE_KEY_LIST,
-            JSON.stringify(knowledgeList),
+            JSON.stringify(list),
             CACHE_DURATION
           );
-          console.log('Data cached');
         } catch (e) {
           console.error('Failed to cache data', e);
         }
       }
 
-      // フィルタリング
-      if (filters) {
-        if (filters.searchWord) {
-          const searchLower = filters.searchWord.toLowerCase();
-          knowledgeList = knowledgeList.filter(
-            (k) =>
-              k.title.toLowerCase().includes(searchLower) ||
-              k.comment.toLowerCase().includes(searchLower) ||
-              k.url.toLowerCase().includes(searchLower)
-          );
-        }
-
-        if (filters.tags && filters.tags.length > 0) {
-          knowledgeList = knowledgeList.filter((k) =>
-            filters.tags!.some((tag) => k.tags.includes(tag))
-          );
-        }
-      }
-
-      return knowledgeList;
+      return this.applyFilters(list, filters);
     } catch (error: any) {
       console.error('Error in getKnowledgeList:', error);
       console.error('Error details:', error.toString());
@@ -163,69 +519,12 @@ export class KnowledgeService {
    * ナレッジの詳細を取得する
    */
   static getDetail(id: number): Knowledge | null {
-    try {
-      const sheet = SheetService.openSpreadsheet().getActiveSheet();
-      const dataRange = sheet.getDataRange();
-
-      if (!dataRange) {
-        return null;
-      }
-
-      const data = dataRange.getValues();
-
-      if (!data || data.length <= 1) {
-        return null;
-      }
-
-      // ヘッダー行をスキップ
-      const rows = data.slice(1);
-
-      // IDに対応する行を直接取得（IDは行番号に対応）
-      const rowIndex = id - 1; // IDは1から始まるので、インデックスに変換
-
-      if (rowIndex < 0 || rowIndex >= rows.length) {
-        return null;
-      }
-
-      const row = rows[rowIndex];
-
-      if (!row || row.length === 0 || !row[0]) {
-        return null;
-      }
-
-      // ナレッジオブジェクトを作成
-      const postedAt = row[4] ? new Date(row[4] as Date) : new Date();
-      const comments = parseComments((row[6] as string) || '');
-
-      const commentsWithStringDates = comments.map((comment) => ({
-        text: comment.text,
-        author: comment.author,
-        postedAt:
-          comment.postedAt instanceof Date
-            ? comment.postedAt
-            : typeof comment.postedAt === 'string'
-            ? new Date(comment.postedAt)
-            : new Date(),
-      }));
-
-      const knowledge: Knowledge = {
-        id: id,
-        title: (row[0] as string) || '',
-        url: (row[1] as string) || '',
-        comment: (row[2] as string) || '',
-        tags: (row[3] as string)?.split(',').map((tag) => tag.trim()) || [],
-        postedAt: postedAt,
-        postedBy: (row[5] as string) || '',
-        comments: commentsWithStringDates,
-        thumbnailUrl: (row[7] as string) || '',
-        likes: (row[8] as number) || 0,
-      };
-
-      return knowledge;
-    } catch (error: any) {
-      console.error('Error in getKnowledgeDetail:', error);
+    if (!id) {
       return null;
     }
+    const list = this.getList();
+    const item = list.find((knowledge) => knowledge.id === id);
+    return item || null;
   }
 
   /**
@@ -233,41 +532,54 @@ export class KnowledgeService {
    */
   static add(knowledge: {
     title: string;
-    url: string;
+    url?: string;
     comment: string;
-    tags: string; // カンマ区切りの文字列
+    tags: string;
     postedBy: string;
     thumbnailUrl?: string;
+    category?: string;
+    status?: string;
+    metadata?: Record<string, any>;
   }): { success: boolean; id?: number; error?: string } {
     try {
-      const sheet = SheetService.openSpreadsheet().getActiveSheet();
+      const sheets = this.getSheets();
+      const tagNames = this.normalizeTagInput(knowledge.tags);
+      const { ids: tagIds, names: normalizedTagNames } = this.getOrCreateTagIds(
+        tagNames,
+        sheets
+      );
 
-      // 新しい行のデータを準備
       const now = new Date();
-      const tags = knowledge.tags || '';
-      const thumbnailUrl = knowledge.thumbnailUrl || '';
-      const newRow = [
+      const newId = this.getNextId(sheets.posts);
+      const category = (knowledge.category as PostCategory) || DEFAULT_CATEGORY;
+      const metadata = {
+        url: knowledge.url || '',
+        ...(knowledge.metadata || {}),
+      };
+
+      sheets.posts.appendRow([
+        newId,
+        category,
         knowledge.title || '',
-        knowledge.url || '',
         knowledge.comment || '',
-        tags,
-        now, // 投稿日時
+        JSON.stringify(normalizedTagNames),
         knowledge.postedBy || '匿名',
-        '[]', // コメント履歴（初期値は空配列のJSON）
-        thumbnailUrl,
-        0, // いいね数（初期値は0）
-      ];
+        now,
+        now,
+        0,
+        knowledge.thumbnailUrl || '',
+        knowledge.status || DEFAULT_STATUS,
+        JSON.stringify(metadata),
+      ]);
 
-      // スプレッドシートに追加（ヘッダー行の次に追加）
-      sheet.appendRow(newRow);
+      if (tagIds.length > 0) {
+        tagIds.forEach((tagId) => {
+          sheets.postTags.appendRow([newId, tagId, now]);
+        });
+      }
 
-      // 追加した行番号を取得
-      const lastRow = sheet.getLastRow();
-
-      // キャッシュをクリア
       this.clearCache();
-
-      return { success: true, id: lastRow - 1 }; // IDは行番号-1（ヘッダー行を除く）
+      return { success: true, id: newId };
     } catch (error: any) {
       console.error('Error adding knowledge:', error);
       return { success: false, error: error.toString() };
@@ -281,53 +593,64 @@ export class KnowledgeService {
     knowledgeId: number,
     knowledge: {
       title: string;
-      url: string;
+      url?: string;
       comment: string;
-      tags: string; // カンマ区切りの文字列
+      tags: string;
       postedBy: string;
       thumbnailUrl?: string;
+      category?: string;
+      status?: string;
+      metadata?: Record<string, any>;
     }
   ): { success: boolean; id?: number; error?: string } {
     try {
-      const sheet = SheetService.openSpreadsheet().getActiveSheet();
-      const rowIndex = knowledgeId; // IDは行番号に対応（ヘッダー行を除く）
-
-      // 既存のデータを取得（コメント履歴といいね数は保持）
-      const data = sheet.getDataRange().getValues();
-      if (rowIndex >= data.length) {
-        return {
-          success: false,
-          error: 'ナレッジが見つかりません',
-        };
+      const sheets = this.getSheets();
+      const rowNumber = this.findRowById(sheets.posts, knowledgeId);
+      if (!rowNumber) {
+        return { success: false, error: 'ナレッジが見つかりません' };
       }
 
-      const existingRow = data[rowIndex + 1]; // +1はヘッダー行のため
-      const existingComments = existingRow[6] || '[]'; // コメント履歴
-      const existingLikes = existingRow[8] || 0; // いいね数
-      const existingPostedAt = existingRow[4] || new Date(); // 投稿日時（変更しない）
+      const tagNames = this.normalizeTagInput(knowledge.tags);
+      const { ids: tagIds, names: normalizedTagNames } = this.getOrCreateTagIds(
+        tagNames,
+        sheets
+      );
 
-      // 更新するデータを準備
-      const tags = knowledge.tags || '';
-      const thumbnailUrl = knowledge.thumbnailUrl || '';
-      const updatedRow = [
-        knowledge.title || '',
-        knowledge.url || '',
-        knowledge.comment || '',
-        tags,
-        existingPostedAt, // 投稿日時は変更しない
-        knowledge.postedBy || '匿名',
-        existingComments, // コメント履歴は保持
-        thumbnailUrl,
-        existingLikes, // いいね数は保持
-      ];
+      const metadata = {
+        url: knowledge.url || '',
+        ...(knowledge.metadata || {}),
+      };
 
-      // スプレッドシートを更新
-      const range = sheet.getRange(rowIndex + 1, 1, 1, updatedRow.length);
-      range.setValues([updatedRow]);
+      const rowValues = sheets.posts
+        .getRange(rowNumber, 1, 1, KNOWLEDGE_SHEET_HEADERS.POSTS.length)
+        .getValues()[0];
 
-      // キャッシュをクリア
+      const existingPostedAt = rowValues[6] || new Date();
+      const existingLikes = Number(rowValues[8]) || 0;
+
+      sheets.posts
+        .getRange(rowNumber, 2, 1, KNOWLEDGE_SHEET_HEADERS.POSTS.length - 1)
+        .setValues([
+          [
+            (knowledge.category as PostCategory) ||
+              rowValues[1] ||
+              DEFAULT_CATEGORY,
+            knowledge.title || '',
+            knowledge.comment || '',
+            JSON.stringify(normalizedTagNames),
+            knowledge.postedBy || '匿名',
+            existingPostedAt,
+            new Date(),
+            existingLikes,
+            knowledge.thumbnailUrl || '',
+            knowledge.status || rowValues[10] || DEFAULT_STATUS,
+            JSON.stringify(metadata),
+          ],
+        ]);
+
+      this.replacePostTags(knowledgeId, tagIds, sheets.postTags);
+
       this.clearCache();
-
       return { success: true, id: knowledgeId };
     } catch (error: any) {
       console.error('Error updating knowledge:', error);
@@ -344,28 +667,27 @@ export class KnowledgeService {
     author: string
   ): boolean {
     try {
-      const sheet = SheetService.openSpreadsheet().getActiveSheet();
-      const data = sheet.getDataRange().getValues();
-      const rowIndex = knowledgeId; // IDは行番号に対応
-
-      if (rowIndex >= data.length) {
+      const sheets = this.getSheets();
+      const rowNumber = this.findRowById(sheets.posts, knowledgeId);
+      if (!rowNumber) {
         return false;
       }
 
-      const currentComments = parseComments(data[rowIndex][6] as string);
-      const newComment: Comment = {
-        text: comment,
-        author: author,
-        postedAt: new Date(),
-      };
-      currentComments.push(newComment);
+      const newId = this.getNextId(sheets.comments);
+      const now = new Date();
 
-      // コメント列（7列目、インデックス6）を更新
-      sheet.getRange(rowIndex + 1, 7).setValue(JSON.stringify(currentComments));
+      sheets.comments.appendRow([
+        newId,
+        knowledgeId,
+        author || '匿名',
+        comment,
+        now,
+      ]);
 
-      // キャッシュをクリア
+      // 更新日時を更新
+      sheets.posts.getRange(rowNumber, 8).setValue(now);
+
       this.clearCache();
-
       return true;
     } catch (error) {
       console.error('Error adding comment:', error);
@@ -376,20 +698,35 @@ export class KnowledgeService {
   /**
    * いいねを追加する
    */
-  static addLike(knowledgeId: number): number {
+  static addLike(knowledgeId: number, clientId?: string): number {
     try {
-      const sheet = SheetService.openSpreadsheet().getActiveSheet();
-      const rowIndex = knowledgeId;
-      const currentLikes =
-        (sheet.getRange(rowIndex + 1, 9).getValue() as number) || 0;
-      const newLikes = currentLikes + 1;
+      const sheets = this.getSheets();
+      const rowNumber = this.findRowById(sheets.posts, knowledgeId);
+      if (!rowNumber) {
+        throw new Error('ナレッジが見つかりません');
+      }
 
-      sheet.getRange(rowIndex + 1, 9).setValue(newLikes);
+      let alreadyLiked = false;
+      if (clientId) {
+        const likeRows = this.getSheetValues(sheets.likes);
+        alreadyLiked = likeRows.some(
+          (row) => row[0] === clientId && Number(row[1]) === Number(knowledgeId)
+        );
+      }
 
-      // キャッシュをクリア
+      if (!alreadyLiked) {
+        sheets.likes.appendRow([
+          clientId || `anonymous-${Utilities.getUuid()}`,
+          knowledgeId,
+          new Date(),
+        ]);
+        const likesCell = sheets.posts.getRange(rowNumber, 9);
+        const currentLikes = Number(likesCell.getValue()) || 0;
+        likesCell.setValue(currentLikes + 1);
+      }
+
       this.clearCache();
-
-      return newLikes;
+      return Number(sheets.posts.getRange(rowNumber, 9).getValue()) || 0;
     } catch (error) {
       console.error('Error adding like:', error);
       return 0;
