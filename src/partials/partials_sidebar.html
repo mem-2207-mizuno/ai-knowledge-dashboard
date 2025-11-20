@@ -1,0 +1,36 @@
+<aside class="sidebar">
+      <div class="logo">🧠 AI Knowledge</div>
+      <button class="primary-button" onclick="openAddModal()">+ ナレッジを追加</button>
+
+      <div class="sidebar-section">
+        <div class="section-title">検索</div>
+        <div class="search-box">
+          <input type="text" id="searchInput" placeholder="キーワードで検索...">
+          <button onclick="searchKnowledge()">検索</button>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="section-title">ビュー</div>
+        <div class="nav-menu">
+          <button class="nav-item active" data-view="all" onclick="setView('all')">🏠 ホーム</button>
+          <button class="nav-item" data-view="favorites" onclick="setView('favorites')">⭐ お気に入り</button>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="section-title">カテゴリ</div>
+        <div class="category-list">
+          <button class="category-chip active" data-category="all" onclick="setCategory('all')">🌐 すべて</button>
+          <button class="category-chip" data-category="article" onclick="setCategory('article')">📰 気になる記事</button>
+          <button class="category-chip" data-category="question" onclick="setCategory('question')">❓ 相談・質問</button>
+          <button class="category-chip" data-category="recruitment" onclick="setCategory('recruitment')">🤝 仲間募集</button>
+          <button class="category-chip" data-category="showcase" onclick="setCategory('showcase')">🎁 成果物紹介</button>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <div class="section-title">タグ</div>
+        <div id="tagsFilter" class="tags-filter"></div>
+      </div>
+    </aside>

@@ -57,6 +57,8 @@ function doGet(
   // キャッシュが効いているため高速に取得できるはず
   const initialData = KnowledgeService.getList();
   (template as any).initialData = JSON.stringify(initialData);
+  const referenceData = KnowledgeService.getReferenceData();
+  (template as any).referenceData = JSON.stringify(referenceData);
 
   return template
     .evaluate()
@@ -84,6 +86,11 @@ function getKnowledgeDetail(id: number): string {
   return JSON.stringify(detail);
 }
 
+function getReferenceData(): string {
+  const reference = KnowledgeService.getReferenceData();
+  return JSON.stringify(reference);
+}
+
 /**
  * ナレッジを追加するAPI
  */
@@ -91,7 +98,7 @@ function addKnowledge(knowledge: {
   title: string;
   url?: string;
   comment: string;
-  tags: string;
+  tags: string | string[];
   postedBy: string;
   thumbnailUrl?: string;
   category?: string;
@@ -111,7 +118,7 @@ function updateKnowledge(
     title: string;
     url?: string;
     comment: string;
-    tags: string;
+    tags: string | string[];
     postedBy: string;
     thumbnailUrl?: string;
     category?: string;
@@ -147,12 +154,18 @@ function testSpreadsheetAccess(): string {
   return SheetService.testAccess();
 }
 
+function include(filename: string): string {
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
+}
+
 // グローバルスコープに関数を公開（GASから呼び出せるようにする）
 (global as any).doGet = doGet;
 (global as any).getKnowledgeList = getKnowledgeList;
 (global as any).getKnowledgeDetail = getKnowledgeDetail;
+(global as any).getReferenceData = getReferenceData;
 (global as any).addKnowledge = addKnowledge;
 (global as any).updateKnowledge = updateKnowledge;
 (global as any).addComment = addComment;
 (global as any).addLike = addLike;
 (global as any).testSpreadsheetAccess = testSpreadsheetAccess;
+(global as any).include = include;

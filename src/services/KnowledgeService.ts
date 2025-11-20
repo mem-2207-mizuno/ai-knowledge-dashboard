@@ -1,6 +1,13 @@
 import { SheetService } from './SheetService';
-import { Knowledge, Comment, TagRecord, PostCategory } from '../types';
+import {
+  Knowledge,
+  Comment,
+  TagRecord,
+  PostCategory,
+  CategoryFormConfig,
+} from '../types';
 import { safeJsonParse, slugifyTag } from '../utils';
+import { CATEGORY_FORM_CONFIGS } from '../config/categoryFormConfig';
 
 export const KNOWLEDGE_SHEET_NAMES = {
   POSTS: 'Posts',
@@ -527,6 +534,18 @@ export class KnowledgeService {
     return item || null;
   }
 
+  static getReferenceData(): {
+    tags: TagRecord[];
+    categories: CategoryFormConfig[];
+  } {
+    const sheets = this.getSheets();
+    const tags = this.loadTagRecords(sheets.tags);
+    return {
+      tags,
+      categories: CATEGORY_FORM_CONFIGS,
+    };
+  }
+
   /**
    * ナレッジを追加する
    */
@@ -534,7 +553,7 @@ export class KnowledgeService {
     title: string;
     url?: string;
     comment: string;
-    tags: string;
+    tags: string | string[];
     postedBy: string;
     thumbnailUrl?: string;
     category?: string;
@@ -595,7 +614,7 @@ export class KnowledgeService {
       title: string;
       url?: string;
       comment: string;
-      tags: string;
+      tags: string | string[];
       postedBy: string;
       thumbnailUrl?: string;
       category?: string;

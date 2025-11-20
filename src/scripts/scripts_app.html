@@ -1,0 +1,1459 @@
+<script>
+    const referenceData = SERVER_DATA.referenceData || {};
+    const CATEGORY_CONFIG = [
+      { id: 'all', label: 'すべて', icon: '🌐' },
+      { id: 'article', label: '気になる記事', icon: '📰' },
+      { id: 'question', label: '相談・質問', icon: '❓' },
+      { id: 'recruitment', label: '仲間募集', icon: '🤝' },
+      { id: 'showcase', label: '成果物紹介', icon: '🎁' },
+    ];
+
+    const CATEGORY_FORM_CONFIGS = Array.isArray(referenceData.categories)
+      ? referenceData.categories
+      : [];
+    const KNOWN_TAGS = Array.isArray(referenceData.tags) ? referenceData.tags : [];
+
+    const DEFAULT_CATEGORY_KEY = 'article';
+    const FORM_CATEGORY_OPTIONS =
+      CATEGORY_FORM_CONFIGS.length > 0
+        ? CATEGORY_FORM_CONFIGS
+        : CATEGORY_CONFIG.filter((config) => config.id && config.id !== 'all').map(
+            (config) => ({
+              key: config.id,
+              label: config.label,
+              icon: config.icon,
+              metadataFields: [],
+            })
+          );
+    const DEFAULT_CATEGORY_VALUE =
+      FORM_CATEGORY_OPTIONS.find((config) => config.key === DEFAULT_CATEGORY_KEY)?.key ||
+      (FORM_CATEGORY_OPTIONS[0] ? FORM_CATEGORY_OPTIONS[0].key : '');
+
+    let addMarkdownEditor = null;
+    let editMarkdownEditor = null;
+
+    const EASYMDE_OPTIONS = {
+      spellChecker: false,
+      status: false,
+      autoDownloadFontAwesome: false,
+      renderingConfig: {
+        singleLineBreaks: false,
+      },
+      toolbar: [
+        'bold',
+        'italic',
+        'heading',
+        '|',
+        'quote',
+        'unordered-list',
+        'ordered-list',
+        '|',
+        'link',
+        'code',
+        '|',
+        'preview',
+        'side-by-side',
+        'fullscreen',
+        '|',
+        'guide',
+      ],
+    };
+
+    function initMarkdownEditors() {
+      if (typeof EasyMDE === 'undefined') {
+        console.warn('EasyMDE is not loaded.');
+        return;
+      }
+      const addTextarea = document.getElementById('addComment');
+      if (addTextarea && !addMarkdownEditor) {
+        addMarkdownEditor = new EasyMDE(
+          Object.assign({}, EASYMDE_OPTIONS, {
+            element: addTextarea,
+            placeholder: 'Markdownで詳細を記述できます',
+          })
+        );
+      }
+      const editTextarea = document.getElementById('editComment');
+      if (editTextarea && !editMarkdownEditor) {
+        editMarkdownEditor = new EasyMDE(
+          Object.assign({}, EASYMDE_OPTIONS, {
+            element: editTextarea,
+            placeholder: 'Markdownで詳細を記述できます',
+          })
+        );
+      }
+    }
+
+    function getMarkdownValue(editor, textareaId) {
+      if (editor && typeof editor.value === 'function') {
+        return editor.value().trim();
+      }
+      const textarea = document.getElementById(textareaId);
+      return textarea ? textarea.value.trim() : '';
+    }
+
+    function setMarkdownValue(editor, textareaId, value) {
+      const resolved = value || '';
+      if (editor && typeof editor.value === 'function') {
+        editor.value(resolved);
+        return;
+      }
+      const textarea = document.getElementById(textareaId);
+      if (textarea) {
+        textarea.value = resolved;
+      }
+    }
+
+    function refreshMarkdownEditor(editor) {
+      if (editor && editor.codemirror) {
+        setTimeout(() => editor.codemirror.refresh(), 0);
+      }
+    }
+
+    const TAG_INPUT_STATE = {
+      add: [],
+      edit: [],
+    };
+
+    function escapeHtml(value) {
+      if (typeof value !== 'string') {
+        return '';
+      }
+      return value
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function hydrateTagSuggestionList() {
+      const datalist = document.getElementById('tagSuggestionsList');
+      if (!datalist) {
+        return;
+      }
+      datalist.innerHTML = KNOWN_TAGS.map((tag) => `<option value="${escapeHtml(tag.name)}"></option>`).join('');
+    }
+
+    function getTagInputElement(mode) {
+      return document.getElementById(mode === 'add' ? 'addTagInput' : 'editTagInput');
+    }
+
+    function setupTagInputs() {
+      hydrateTagSuggestionList();
+      ['add', 'edit'].forEach((mode) => {
+        const input = getTagInputElement(mode);
+        if (input && !input.dataset.listenerAttached) {
+          input.addEventListener('keydown', (event) => handleTagInputKeydown(event, mode));
+          input.addEventListener('blur', () => commitTagFromInputElement(input, mode));
+          input.dataset.listenerAttached = 'true';
+        }
+        setupTagChipRemoval(mode);
+      });
+    }
+
+    function handleTagInputKeydown(event, mode) {
+      if (event.key === 'Enter' || event.key === ',') {
+        event.preventDefault();
+        commitTagFromInputElement(event.target, mode);
+        return;
+      }
+      if (
+        event.key === 'Backspace' &&
+        event.target.value === '' &&
+        TAG_INPUT_STATE[mode] &&
+        TAG_INPUT_STATE[mode].length > 0
+      ) {
+        TAG_INPUT_STATE[mode].pop();
+        renderTagChips(mode);
+      }
+    }
+
+    function setupTagChipRemoval(mode) {
+      const containerId = mode === 'add' ? 'addTagChips' : 'editTagChips';
+      const container = document.getElementById(containerId);
+      if (!container || container.dataset.listenerAttached) {
+        return;
+      }
+      container.addEventListener('click', (event) => {
+        const button = event.target.closest('button[data-tag]');
+        if (!button) {
+          return;
+        }
+        const tagValue = button.getAttribute('data-tag');
+        removeTag(mode, tagValue);
+      });
+      container.dataset.listenerAttached = 'true';
+    }
+
+    function commitTagFromInputElement(inputElement, mode) {
+      if (!inputElement) {
+        return;
+      }
+      const rawValue = inputElement.value || '';
+      const normalized = rawValue.trim();
+      if (normalized) {
+        if (!TAG_INPUT_STATE[mode]) {
+          TAG_INPUT_STATE[mode] = [];
+        }
+        if (!TAG_INPUT_STATE[mode].includes(normalized)) {
+          TAG_INPUT_STATE[mode].push(normalized);
+          renderTagChips(mode);
+        }
+      }
+      inputElement.value = '';
+    }
+
+    function commitPendingTagInput(mode) {
+      const input = getTagInputElement(mode);
+      if (input && input.value) {
+        commitTagFromInputElement(input, mode);
+      }
+    }
+
+    function removeTag(mode, targetTag) {
+      if (!targetTag || !TAG_INPUT_STATE[mode]) {
+        return;
+      }
+      const index = TAG_INPUT_STATE[mode].indexOf(targetTag);
+      if (index > -1) {
+        TAG_INPUT_STATE[mode].splice(index, 1);
+        renderTagChips(mode);
+      }
+    }
+
+    function renderTagChips(mode) {
+      const containerId = mode === 'add' ? 'addTagChips' : 'editTagChips';
+      const container = document.getElementById(containerId);
+      if (!container) {
+        return;
+      }
+      const tags = TAG_INPUT_STATE[mode] || [];
+      if (tags.length === 0) {
+        container.innerHTML = '<span class="tag-chip-placeholder">タグを追加してください</span>';
+        return;
+      }
+      container.innerHTML = tags
+        .map(
+          (tag) => `
+          <span class="tag-chip tag-chip-editable">
+            <span>${escapeHtml(tag)}</span>
+            <button type="button" class="tag-chip-remove" data-tag="${escapeHtml(tag)}" aria-label="${escapeHtml(
+            tag
+          )} を削除">&times;</button>
+          </span>`
+        )
+        .join('');
+    }
+
+    function setTags(mode, tags) {
+      const normalized = Array.isArray(tags)
+        ? tags
+        : typeof tags === 'string'
+          ? tags.split(',').map((tag) => tag.trim())
+          : [];
+      TAG_INPUT_STATE[mode] = normalized
+        .map((tag) => tag.trim())
+        .filter((tag, index, arr) => tag && arr.indexOf(tag) === index);
+      renderTagChips(mode);
+      const input = getTagInputElement(mode);
+      if (input) {
+        input.value = '';
+      }
+    }
+
+    function getTags(mode) {
+      return TAG_INPUT_STATE[mode] ? [...TAG_INPUT_STATE[mode]] : [];
+    }
+
+    function populateCategorySelect(selectId) {
+      const selectEl = document.getElementById(selectId);
+      if (!selectEl) {
+        return;
+      }
+      if (!FORM_CATEGORY_OPTIONS || FORM_CATEGORY_OPTIONS.length === 0) {
+        selectEl.innerHTML = '';
+        return;
+      }
+      selectEl.innerHTML = FORM_CATEGORY_OPTIONS.map((config) => {
+        const label = `${config.icon ? `${config.icon} ` : ''}${config.label}`;
+        return `<option value="${config.key}">${label}</option>`;
+      }).join('');
+    }
+
+    function renderMetadataFields(mode, metadata = {}) {
+      const containerId = mode === 'add' ? 'addMetadataFields' : 'editMetadataFields';
+      const separatorId = mode === 'add' ? 'addMetadataSeparator' : 'editMetadataSeparator';
+      const container = document.getElementById(containerId);
+      const separator = document.getElementById(separatorId);
+      if (!container) {
+        return;
+      }
+      const selectEl = document.getElementById(mode === 'add' ? 'addCategory' : 'editCategory');
+      if (!selectEl) {
+        container.innerHTML = '';
+        if (separator) separator.style.display = 'none';
+        return;
+      }
+      const categoryKey = selectEl.value;
+      const config = CATEGORY_FORM_CONFIGS.find((cat) => cat.key === categoryKey);
+      if (!config || !config.metadataFields || config.metadataFields.length === 0) {
+        container.innerHTML = '';
+        if (separator) separator.style.display = 'none';
+        return;
+      }
+      if (separator) separator.style.display = 'block';
+      container.innerHTML = config.metadataFields
+        .map((field) => createMetadataFieldMarkup(field, metadata[field.key], mode))
+        .join('');
+    }
+
+    function createMetadataFieldMarkup(field, value, mode) {
+      const containerId = `${mode}-meta-${field.key}`;
+      const requiredAttr = field.required ? 'required' : '';
+      const placeholderAttr = field.placeholder ? `placeholder="${escapeHtml(field.placeholder)}"` : '';
+      const helper = field.helperText
+        ? `<div class="property-helper">${escapeHtml(field.helperText)}</div>`
+        : '';
+      let resolvedValue = '';
+      if (Array.isArray(value)) {
+        resolvedValue = value.join(', ');
+      } else if (typeof value === 'string') {
+        resolvedValue = value;
+      } else if (typeof field.defaultValue === 'string') {
+        resolvedValue = field.defaultValue;
+      }
+
+      let inputHtml = '';
+      if (field.type === 'textarea') {
+        inputHtml = `<textarea id="${containerId}" data-metadata-key="${field.key}" ${requiredAttr} ${placeholderAttr}>${escapeHtml(
+          resolvedValue
+        )}</textarea>`;
+      } else if (field.type === 'select') {
+        const options =
+          field.options?.map((option) => {
+            const selected =
+              resolvedValue && option.value === resolvedValue ? 'selected' : '';
+            return `<option value="${option.value}" ${selected}>${option.label}</option>`;
+          }) || [];
+        inputHtml = `<select id="${containerId}" data-metadata-key="${field.key}" ${requiredAttr}>
+          ${options.join('')}
+        </select>`;
+      } else {
+        let inputType = 'text';
+        if (field.type === 'url') {
+          inputType = 'url';
+        } else if (field.type === 'date') {
+          inputType = 'date';
+        }
+        inputHtml = `<input type="${inputType}" id="${containerId}" data-metadata-key="${
+          field.key
+        }" value="${escapeHtml(resolvedValue)}" ${requiredAttr} ${placeholderAttr} />`;
+      }
+
+      return `
+        <div class="property-row metadata-row">
+          <div class="property-label">${field.label}${field.required ? ' *' : ''}</div>
+          <div class="property-control">
+            ${inputHtml}
+            ${helper}
+          </div>
+        </div>
+      `;
+    }
+
+    function collectMetadata(mode) {
+      const containerId = mode === 'add' ? 'addMetadataFields' : 'editMetadataFields';
+      const container = document.getElementById(containerId);
+      if (!container) {
+        return {};
+      }
+      const metadataInputs = container.querySelectorAll('[data-metadata-key]');
+      const result = {};
+      metadataInputs.forEach((input) => {
+        const key = input.getAttribute('data-metadata-key');
+        if (!key) {
+          return;
+        }
+        let value;
+        if (input.tagName === 'SELECT') {
+          const selectEl = input;
+          if (selectEl.multiple) {
+            value = Array.from(selectEl.options)
+              .filter((option) => option.selected)
+              .map((option) => option.value);
+          } else {
+            value = selectEl.value.trim();
+          }
+        } else {
+          value = input.value.trim();
+        }
+        if (Array.isArray(value) && value.length > 0) {
+          result[key] = value;
+        } else if (value) {
+          result[key] = value;
+        }
+      });
+      return result;
+    }
+
+    function setupFormControls() {
+      populateCategorySelect('addCategory');
+      populateCategorySelect('editCategory');
+      const addSelect = document.getElementById('addCategory');
+      if (addSelect) {
+        addSelect.value = DEFAULT_CATEGORY_VALUE || addSelect.value;
+        addSelect.addEventListener('change', () => renderMetadataFields('add'));
+        renderMetadataFields('add');
+      }
+      const editSelect = document.getElementById('editCategory');
+      if (editSelect) {
+        if (!editSelect.value && DEFAULT_CATEGORY_VALUE) {
+          editSelect.value = DEFAULT_CATEGORY_VALUE;
+        }
+        editSelect.addEventListener('change', () => renderMetadataFields('edit'));
+        renderMetadataFields('edit');
+      }
+    }
+
+    let allKnowledge = [];
+    let selectedTags = [];
+    let selectedCategory = 'all';
+    let currentView = 'all';
+
+    const CLIENT_ID_STORAGE_KEY = 'ai-knowledge-dashboard-client-id';
+    function ensureClientId() {
+      try {
+        let clientId = localStorage.getItem(CLIENT_ID_STORAGE_KEY);
+        if (!clientId) {
+          clientId = `client-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
+          localStorage.setItem(CLIENT_ID_STORAGE_KEY, clientId);
+        }
+        return clientId;
+      } catch (error) {
+        console.warn('Failed to access localStorage for client ID:', error);
+        return `client-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
+      }
+    }
+    const CLIENT_ID = ensureClientId();
+    const LIKED_STORAGE_KEY = 'ai-knowledge-dashboard-liked-ids';
+    let likedKnowledgeIds = loadLikedKnowledgeIds();
+
+    function loadLikedKnowledgeIds() {
+      try {
+        const stored = localStorage.getItem(LIKED_STORAGE_KEY);
+        if (!stored) {
+          return new Set();
+        }
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          return new Set(parsed.map(id => id.toString()));
+        }
+      } catch (error) {
+        console.warn('Failed to load liked IDs from storage:', error);
+      }
+      return new Set();
+    }
+
+    function saveLikedKnowledgeIds() {
+      try {
+        localStorage.setItem(LIKED_STORAGE_KEY, JSON.stringify(Array.from(likedKnowledgeIds)));
+      } catch (error) {
+        console.warn('Failed to save liked IDs:', error);
+      }
+    }
+
+    function isKnowledgeLiked(id) {
+      if (!id) {
+        return false;
+      }
+      return likedKnowledgeIds.has(id.toString());
+    }
+
+    function markKnowledgeLiked(id) {
+      if (!id) {
+        return;
+      }
+      likedKnowledgeIds.add(id.toString());
+      saveLikedKnowledgeIds();
+      updateInsights();
+    }
+
+    function findKnowledgeById(id) {
+      return allKnowledge.find(k => k.id == id);
+    }
+
+    function renderCommentItem(comment) {
+      if (!comment) {
+        return '';
+      }
+      const date = comment.postedAt
+        ? (typeof comment.postedAt === 'string'
+          ? new Date(comment.postedAt)
+          : new Date(comment.postedAt))
+        : new Date();
+      const statusLabel = comment.pending
+        ? '<span style="margin-left: 8px; color: #999; font-size: 0.9em;">送信中...</span>'
+        : '';
+      const tempAttr = comment.tempId ? `data-temp-id="${comment.tempId}"` : '';
+      return `
+        <div class="comment-item ${comment.pending ? 'comment-pending' : ''}" ${tempAttr}
+          style="padding: 10px; margin: 10px 0; background: #f5f5f5; border-radius: 5px; opacity: ${comment.pending ? '0.6' : '1'};">
+          <strong>${comment.author || '匿名'}</strong> - ${date.toLocaleString('ja-JP')} ${statusLabel}
+          <div class="markdown-content" style="margin-top: 10px;">${renderMarkdown(comment.text || '')}</div>
+        </div>
+      `;
+    }
+
+    function renderCommentsHtml(comments) {
+      if (!comments || comments.length === 0) {
+        return '<p>コメントはまだありません</p>';
+      }
+      return comments.map(comment => renderCommentItem(comment)).join('');
+    }
+
+    function getCategoryInfo(categoryId) {
+      const normalized = categoryId || 'article';
+      return CATEGORY_CONFIG.find(cat => cat.id === normalized) || CATEGORY_CONFIG.find(cat => cat.id === 'article');
+    }
+
+    function updateCategoryUI() {
+      document.querySelectorAll('.category-chip').forEach(chip => {
+        const cat = chip.getAttribute('data-category');
+        if (cat) {
+          chip.classList.toggle('active', cat === selectedCategory);
+        }
+      });
+    }
+
+    function setCategory(category) {
+      selectedCategory = category;
+      updateCategoryUI();
+      filterKnowledge();
+    }
+
+    function updateViewUI() {
+      document.querySelectorAll('.nav-item').forEach(item => {
+        const view = item.getAttribute('data-view');
+        if (view) {
+          item.classList.toggle('active', view === currentView);
+        }
+      });
+    }
+
+    function setView(view) {
+      currentView = view;
+      updateViewUI();
+      filterKnowledge();
+    }
+
+    function refreshCommentsUI(knowledgeId) {
+      const knowledge = findKnowledgeById(knowledgeId);
+      if (!knowledge) {
+        return;
+      }
+      const commentsList = document.getElementById('commentsList');
+      if (!commentsList) {
+        return;
+      }
+      const comments = Array.isArray(knowledge.comments) ? knowledge.comments : [];
+      commentsList.innerHTML = renderCommentsHtml(comments);
+    }
+
+    function addOptimisticComment(knowledgeId, comment) {
+      const knowledge = findKnowledgeById(knowledgeId);
+      if (!knowledge) {
+        return;
+      }
+      if (!Array.isArray(knowledge.comments)) {
+        knowledge.comments = [];
+      }
+      knowledge.comments.push(comment);
+      refreshCommentsUI(knowledgeId);
+      updateInsights();
+    }
+
+    function removeOptimisticComment(knowledgeId, tempId) {
+      const knowledge = findKnowledgeById(knowledgeId);
+      if (!knowledge || !Array.isArray(knowledge.comments)) {
+        return;
+      }
+      knowledge.comments = knowledge.comments.filter(comment => comment.tempId !== tempId);
+      refreshCommentsUI(knowledgeId);
+      updateInsights();
+    }
+
+    function confirmOptimisticComment(knowledgeId, tempId) {
+      const knowledge = findKnowledgeById(knowledgeId);
+      if (!knowledge || !Array.isArray(knowledge.comments)) {
+        return;
+      }
+      const comment = knowledge.comments.find(c => c.tempId === tempId);
+      if (!comment) {
+        return;
+      }
+      comment.pending = false;
+      delete comment.tempId;
+      comment.postedAt = new Date();
+      refreshCommentsUI(knowledgeId);
+      updateInsights();
+    }
+
+    function updateLikeDisplay(knowledgeId, likes, pending = false) {
+      const liked = isKnowledgeLiked(knowledgeId);
+      const cardBtn = document.getElementById(`like-btn-${knowledgeId}`);
+      if (cardBtn) {
+        cardBtn.textContent = liked ? `❤️ 済 ${likes}` : `❤️ ${likes}`;
+        cardBtn.classList.toggle('liked', liked);
+        cardBtn.disabled = liked || pending;
+        cardBtn.style.opacity = pending ? '0.6' : '1';
+      }
+
+      const modalBtn = document.getElementById(`modal-like-btn-${knowledgeId}`);
+      if (modalBtn) {
+        modalBtn.textContent = liked ? `❤️ いいね済 ${likes}` : `❤️ いいね ${likes}`;
+        modalBtn.classList.toggle('liked', liked);
+        modalBtn.disabled = liked || pending;
+        modalBtn.style.opacity = pending ? '0.6' : '1';
+      }
+    }
+
+    // IDの正規化（数値のみを有効とする）
+    function normalizeKnowledgeId(rawId) {
+      if (rawId === null || rawId === undefined) {
+        return null;
+      }
+
+      if (typeof rawId === 'number') {
+        return Number.isFinite(rawId) && rawId > 0 ? Math.floor(rawId) : null;
+      }
+
+      if (typeof rawId === 'string') {
+        const trimmed = rawId.trim();
+        if (trimmed === '') {
+          return null;
+        }
+        const parsed = parseInt(trimmed, 10);
+        return Number.isNaN(parsed) || parsed <= 0 ? null : parsed;
+      }
+
+      return null;
+    }
+
+    // MarkdownをHTMLに変換する関数
+    function renderMarkdown(markdown) {
+      if (!markdown || typeof markdown !== 'string') {
+        return '';
+      }
+
+      try {
+        // marked.jsが読み込まれているか確認
+        if (typeof marked !== 'undefined') {
+          // XSS対策: オプションを設定
+          marked.setOptions({
+            breaks: true, // 改行を<br>に変換
+            gfm: true, // GitHub Flavored Markdownを有効化
+          });
+          return marked.parse(markdown);
+        } else {
+          // marked.jsが読み込まれていない場合は、エスケープして表示
+          return markdown.replace(/\n/g, '<br>');
+        }
+      } catch (error) {
+        console.error('Error rendering markdown:', error);
+        // エラーが発生した場合は、エスケープして表示
+        return markdown.replace(/\n/g, '<br>');
+      }
+    }
+
+    // ページ読み込み時にナレッジ一覧を取得
+    window.onload = function () {
+      initMarkdownEditors();
+      setupFormControls();
+      setupTagInputs();
+      setTags('add', []);
+      setTags('edit', []);
+      updateCategoryUI();
+      updateViewUI();
+      updateInsights();
+      // 初期ロード時のIDチェック
+      // サーバーから渡されたIDのみを信頼し、クライアント側でのURL解析は行わない
+      // (GASのiframe URLには予期せぬパラメータが含まれる可能性があるため)
+      let initialId = normalizeKnowledgeId(SERVER_DATA.initialId);
+      if (initialId === null) {
+        console.log('No valid initialId provided by server.');
+      } else {
+        console.log('Parsed initialId from server:', initialId);
+      }
+
+      // サーバーサイドから渡された初期データがある場合はそれを使用
+      const initialData = SERVER_DATA.initialData;
+      if (initialData) {
+        try {
+          console.log('Loaded initial data from server');
+          displayKnowledge(initialData);
+
+          // 初期IDがある場合は詳細を表示
+          if (initialId !== null) {
+            console.log('Attempting to show initial detail for ID:', initialId);
+            // 少し遅延させてデータ描画を確実にする
+            setTimeout(() => {
+              showDetail(initialId, false);
+            }, 100);
+          }
+        } catch (e) {
+          console.error('Failed to process initial data:', e);
+          loadKnowledge(initialId); // 失敗時は通常通り取得
+        }
+      } else {
+        loadKnowledge(initialId);
+      }
+
+      // ... (popstateイベントはそのまま)
+    };
+
+    // ナレッジ一覧を読み込む
+    function loadKnowledge(openId = null) {
+      console.log('Loading knowledge list...');
+      google.script.run
+        .withSuccessHandler(function (result) {
+          console.log('Success handler called with result:', result);
+          console.log('Result type:', typeof result);
+
+          // JSON文字列として返ってくる場合の処理
+          let knowledgeList;
+          if (typeof result === 'string') {
+            try {
+              knowledgeList = JSON.parse(result);
+              console.log('Parsed knowledge list:', knowledgeList);
+            } catch (e) {
+              console.error('Failed to parse JSON:', e);
+              showError('データの解析に失敗しました');
+              return;
+            }
+          } else if (Array.isArray(result)) {
+            knowledgeList = result;
+          } else if (result === null || result === undefined) {
+            console.error('Result is null or undefined');
+            showError('データの取得に失敗しました（nullが返されました）');
+            return;
+          } else {
+            console.error('Unexpected result type:', typeof result, result);
+            showError('予期しないデータ形式です');
+            return;
+          }
+
+          displayKnowledge(knowledgeList);
+
+          const normalizedOpenId = normalizeKnowledgeId(openId);
+          if (normalizedOpenId !== null) {
+            showDetail(normalizedOpenId, false);
+          }
+        })
+        .withFailureHandler(function (error) {
+          console.error('Failure handler called with error:', error);
+          showError(error);
+        })
+        .getKnowledgeList();
+    }
+
+    // ナレッジを表示する
+    function displayKnowledge(knowledgeList) {
+      const grid = document.getElementById('knowledgeGrid');
+
+      // nullチェック
+      if (!knowledgeList) {
+        grid.innerHTML = '<div class="error">データの取得に失敗しました</div>';
+        console.error('knowledgeList is null or undefined');
+        return;
+      }
+
+      // 配列でない場合の処理
+      if (!Array.isArray(knowledgeList)) {
+        grid.innerHTML = '<div class="error">データ形式が正しくありません</div>';
+        console.error('knowledgeList is not an array:', knowledgeList);
+        return;
+      }
+
+      allKnowledge = knowledgeList.map(k => ({
+        ...k,
+        category: k.category || 'article',
+        status: k.status || 'open',
+        likePending: false,
+        postedAt: k.postedAt ? new Date(k.postedAt) : new Date(),
+        comments: Array.isArray(k.comments)
+          ? k.comments.map(comment => ({
+            ...comment,
+            postedAt: comment.postedAt ? new Date(comment.postedAt) : new Date(),
+          }))
+          : [],
+      }));
+
+      if (allKnowledge.length === 0) {
+        updateTagFilter([]);
+        updateInsights();
+        renderKnowledgeGrid([]);
+        updateCategoryUI();
+        updateViewUI();
+        return;
+      }
+
+      // タグフィルタを更新
+      updateTagFilter(allKnowledge);
+      updateInsights();
+      updateCategoryUI();
+      updateViewUI();
+      filterKnowledge();
+    }
+
+    // ナレッジカードを作成
+    function createKnowledgeCard(knowledge) {
+      if (!knowledge) {
+        return '';
+      }
+
+      const categoryInfo = getCategoryInfo(knowledge.category);
+      const categoryLabel = categoryInfo ? `${categoryInfo.icon} ${categoryInfo.label}` : 'ナレッジ';
+      const statusLabel = (knowledge.status || 'open').toUpperCase();
+      const date = knowledge.postedAt instanceof Date ? knowledge.postedAt : new Date(knowledge.postedAt || Date.now());
+      const dateStr = date.toLocaleDateString('ja-JP');
+      const tags = knowledge.tags || [];
+      const tagsHtml = tags.map(tag =>
+        `<span class="card-tag">${tag}</span>`
+      ).join('');
+      const descriptionSource = (knowledge.comment || '')
+        .replace(/<[^>]+>/g, '')
+        .replace(/\n+/g, ' ')
+        .trim();
+      const description = descriptionSource.length > 0
+        ? (descriptionSource.length > 120 ? `${descriptionSource.slice(0, 120)}…` : descriptionSource)
+        : '（説明なし）';
+
+      const liked = knowledge.id ? isKnowledgeLiked(knowledge.id) : false;
+      const likeButtonClass = `like-button ${liked ? 'liked' : ''}`;
+      const likeButtonText = liked ? `❤️ 済 ${knowledge.likes || 0}` : `❤️ ${knowledge.likes || 0}`;
+      const likeButtonDisabled = liked ? 'disabled' : '';
+
+      const coverHtml = knowledge.thumbnailUrl
+        ? `<div class="card-cover" style="background-image:url('${knowledge.thumbnailUrl}')"></div>`
+        : '';
+
+      return `
+        <div class="knowledge-card" onclick="showDetail(${knowledge.id || 0})">
+          ${coverHtml}
+          <div class="card-header-line">
+            <span class="category-badge">${categoryLabel}</span>
+            <span class="status-pill">${statusLabel}</span>
+          </div>
+          <div class="card-title">${knowledge.title || 'タイトルなし'}</div>
+          <div class="card-description">${description}</div>
+          <div class="card-tags">${tagsHtml}</div>
+          <div class="card-meta">
+            <span>${knowledge.postedBy || '不明'}・${dateStr}</span>
+            <button id="like-btn-${knowledge.id}" class="${likeButtonClass}" data-knowledge-id="${knowledge.id}"
+              onclick="event.stopPropagation(); addLike(${knowledge.id || 0})" ${likeButtonDisabled}>
+              ${likeButtonText}
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    // タグフィルタを更新
+    function updateTagFilter(knowledgeList) {
+      if (!knowledgeList || !Array.isArray(knowledgeList)) {
+        return;
+      }
+
+      const tagsSet = new Set();
+      knowledgeList.forEach(k => {
+        if (k && k.tags && Array.isArray(k.tags)) {
+          k.tags.forEach(tag => {
+            if (tag) {
+              tagsSet.add(tag);
+            }
+          });
+        }
+      });
+
+      const tagsFilter = document.getElementById('tagsFilter');
+      if (!tagsFilter) {
+        return;
+      }
+
+      tagsFilter.innerHTML = Array.from(tagsSet).map(tag =>
+        `<span class="tag-chip ${selectedTags.includes(tag) ? 'active' : ''}" onclick="toggleTag('${tag}')">${tag}</span>`
+      ).join('');
+    }
+
+    // タグをトグル
+    function toggleTag(tag) {
+      const index = selectedTags.indexOf(tag);
+      if (index > -1) {
+        selectedTags.splice(index, 1);
+      } else {
+        selectedTags.push(tag);
+      }
+      filterKnowledge();
+    }
+
+    function renderKnowledgeGrid(list) {
+      const grid = document.getElementById('knowledgeGrid');
+      if (!grid) {
+        return;
+      }
+      if (!list || list.length === 0) {
+        grid.innerHTML = '<div class="loading">表示できるナレッジが見つかりませんでした</div>';
+        return;
+      }
+      grid.innerHTML = list.map(k => createKnowledgeCard(k)).join('');
+    }
+
+    function updateInsights() {
+      const totalEl = document.getElementById('statTotalPosts');
+      if (totalEl) {
+        totalEl.textContent = allKnowledge.length.toString();
+      }
+      const favoriteEl = document.getElementById('statFavorites');
+      if (favoriteEl) {
+        favoriteEl.textContent = likedKnowledgeIds.size.toString();
+      }
+      const commentCount = allKnowledge.reduce((sum, item) => {
+        return sum + (item.comments ? item.comments.length : 0);
+      }, 0);
+      const commentsEl = document.getElementById('statComments');
+      if (commentsEl) {
+        commentsEl.textContent = commentCount.toString();
+      }
+    }
+
+    // 検索
+    function searchKnowledge() {
+      filterKnowledge();
+    }
+
+    // フィルタリング
+    function filterKnowledge() {
+      const searchInput = document.getElementById('searchInput');
+      const searchWord = searchInput ? searchInput.value.toLowerCase() : '';
+
+      // ローカルでフィルタリングを実行
+      const filteredList = allKnowledge.filter(k => {
+        const normalizedCategory = k.category || 'article';
+        // キーワード検索
+        let matchesSearch = true;
+        if (searchWord) {
+          matchesSearch =
+            (k.title && k.title.toLowerCase().includes(searchWord)) ||
+            (k.comment && k.comment.toLowerCase().includes(searchWord)) ||
+            (k.url && k.url.toLowerCase().includes(searchWord));
+        }
+
+        // タグ検索
+        let matchesTags = true;
+        if (selectedTags.length > 0) {
+          matchesTags = selectedTags.some(tag => k.tags && k.tags.includes(tag));
+        }
+
+        const matchesCategory = selectedCategory === 'all' || normalizedCategory === selectedCategory;
+        const matchesView = currentView === 'all' ? true : isKnowledgeLiked(k.id);
+
+        return matchesSearch && matchesTags && matchesCategory && matchesView;
+      });
+
+      renderKnowledgeGrid(filteredList);
+
+      // タグフィルタの表示を更新
+      document.querySelectorAll('.tag-chip').forEach(chip => {
+        const tag = chip.textContent;
+        if (selectedTags.includes(tag)) {
+          chip.classList.add('active');
+        } else {
+          chip.classList.remove('active');
+        }
+      });
+    }
+
+    // 詳細を表示
+    function showDetail(id, updateHistory = true) {
+      const normalizedId = normalizeKnowledgeId(id);
+      if (normalizedId === null) {
+        console.warn('showDetail was called with an invalid ID:', id);
+        return;
+      }
+
+      // URL更新
+      if (updateHistory) {
+        // GASのexec URLパラメータ形式に合わせる
+        // 現在のURLにパラメータを追加/置換
+        const url = new URL(window.location.href);
+        url.searchParams.set('id', normalizedId.toString());
+        // pushStateで履歴に追加
+        if (url.href !== window.location.href) {
+          window.history.pushState({ id: normalizedId }, '', url.search);
+        }
+      }
+
+      // まずローカルのデータ（一覧取得済みのデータ）から探す
+      // 型変換して比較 (==) を使用して柔軟にマッチさせる
+      console.log('Searching knowledge with id:', normalizedId);
+      const knowledge = allKnowledge.find(k => k.id == normalizedId);
+
+      if (knowledge) {
+        console.log('Displaying detail from local data:', knowledge.title);
+        displayDetail(knowledge);
+      } else {
+        console.log('Knowledge not found in local data, fetching from server...');
+        google.script.run
+          .withSuccessHandler(function (result) {
+            // JSON文字列として返ってくる場合の処理
+            let knowledge;
+            if (typeof result === 'string') {
+              try {
+                knowledge = JSON.parse(result);
+              } catch (e) {
+                console.error('Failed to parse JSON:', e);
+                alert('データの解析に失敗しました');
+                return;
+              }
+            } else {
+              knowledge = result;
+            }
+            displayDetail(knowledge);
+          })
+          .withFailureHandler(function (error) {
+            console.error('Failed to fetch detail:', error);
+            alert('詳細データの取得に失敗しました。ID: ' + normalizedId);
+          })
+          .getKnowledgeDetail(normalizedId);
+      }
+    }
+
+    // 詳細を表示（モーダル）
+    function displayDetail(knowledge) {
+      if (!knowledge || knowledge === null) {
+        showError('ナレッジが見つかりませんでした');
+        return;
+      }
+
+      const localIndex = allKnowledge.findIndex(k => k.id == knowledge.id);
+      if (localIndex === -1) {
+        allKnowledge.push(knowledge);
+      } else {
+        allKnowledge[localIndex] = knowledge;
+      }
+
+      const modal = document.getElementById('detailModal');
+      const modalTitle = document.getElementById('modalTitle');
+      const modalBody = document.getElementById('modalBody');
+
+      modalTitle.textContent = knowledge.title;
+
+      // postedAtが文字列の場合もDateオブジェクトに変換
+      const date = knowledge.postedAt
+        ? (typeof knowledge.postedAt === 'string'
+          ? new Date(knowledge.postedAt)
+          : new Date(knowledge.postedAt))
+        : new Date();
+      const dateStr = date.toLocaleDateString('ja-JP') + ' ' + date.toLocaleTimeString('ja-JP');
+
+      const categoryInfo = getCategoryInfo(knowledge.category);
+      const categoryLabel = categoryInfo ? `${categoryInfo.icon} ${categoryInfo.label}` : 'ナレッジ';
+      const statusLabel = (knowledge.status || 'open').toUpperCase();
+
+      const tagsHtml = (knowledge.tags || []).map(tag =>
+        `<span class="card-tag">${tag}</span>`
+      ).join('');
+
+      const commentsArray = Array.isArray(knowledge.comments) ? knowledge.comments : [];
+      const commentsHtml = renderCommentsHtml(commentsArray);
+      const isLiked = knowledge.id ? isKnowledgeLiked(knowledge.id) : false;
+      const likesCount = knowledge.likes || 0;
+      const modalLikeLabel = isLiked ? `❤️ いいね済 ${likesCount}` : `❤️ いいね ${likesCount}`;
+      const modalLikeClass = `like-button ${isLiked ? 'liked' : ''}`;
+      const modalLikeDisabled = isLiked ? 'disabled' : '';
+
+      const knowledgeUrl = knowledge.url || '';
+      const urlMarkup = knowledgeUrl
+        ? `<a href="${knowledgeUrl}" target="_blank">${knowledgeUrl}</a>`
+        : 'URLは登録されていません';
+
+      modalBody.innerHTML = `
+        <div style="display:flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px;">
+          <span class="category-badge">${categoryLabel}</span>
+          <span class="status-pill">${statusLabel}</span>
+        </div>
+        ${knowledge.thumbnailUrl ? `<img src="${knowledge.thumbnailUrl}" alt="${knowledge.title}" style="width: 100%; max-height: 300px; object-fit: cover; border-radius: 5px; margin-bottom: 20px;">` : ''}
+        <p><strong>URL:</strong> ${urlMarkup}</p>
+        <p><strong>投稿者:</strong> ${knowledge.postedBy}</p>
+        <p><strong>投稿日時:</strong> ${dateStr}</p>
+        <div class="card-tags" style="margin: 15px 0;">${tagsHtml}</div>
+        <p><strong>説明:</strong></p>
+        <div class="markdown-content">${renderMarkdown(knowledge.comment || '（説明なし）')}</div>
+        <div style="margin: 20px 0;">
+          <h3>コメント</h3>
+          <div id="commentsList">${commentsHtml}</div>
+          <div style="margin-top: 20px;">
+            <input type="text" id="newComment" placeholder="コメントを入力..." style="width: 70%; padding: 10px; border: 2px solid #ddd; border-radius: 5px;">
+            <input type="text" id="commentAuthor" placeholder="お名前" style="width: 20%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; margin-left: 10px;">
+            <button onclick="submitComment(${knowledge.id})" style="padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; margin-left: 10px;">投稿</button>
+          </div>
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+          <button id="modal-like-btn-${knowledge.id}" class="${modalLikeClass}" onclick="addLike(${knowledge.id})" style="flex: 1;" ${modalLikeDisabled}>
+            ${modalLikeLabel}
+          </button>
+          <button onclick="copyShareLink(${knowledge.id})" style="padding: 10px 20px; background: #f5f5f5; color: #333; border: 1px solid #ddd; border-radius: 5px; cursor: pointer; font-size: 16px;">
+             🔗 リンクをコピー
+          </button>
+          <button onclick="openEditModal(${knowledge.id})" style="padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold;">
+            編集
+          </button>
+        </div>
+      `;
+
+      modal.classList.add('active');
+      updateLikeDisplay(knowledge.id, knowledge.likes, knowledge.likePending);
+    }
+
+    // モーダルを閉じる
+    function closeModal() {
+      // URLを戻す
+      const url = new URL(window.location.href);
+      if (url.searchParams.has('id')) {
+        url.searchParams.delete('id');
+        // クエリパラメータがない場合は ? も消したいが、GASのURL構造上 search だけ置換でOKか確認
+        // pushStateの第三引数はパスまたはクエリ文字列
+        window.history.pushState({ id: null }, '', url.pathname + url.search);
+      }
+      document.getElementById('detailModal').classList.remove('active');
+    }
+
+    // 共有リンクをコピー
+    function copyShareLink(id) {
+      const normalizedId = normalizeKnowledgeId(id);
+      if (normalizedId === null) {
+        alert('共有リンクを作成できませんでした（IDが不正です）');
+        return;
+      }
+
+      const baseUrl = SERVER_DATA.appUrl || window.location.href.split('?')[0];
+      const shareUrl = `${baseUrl}?id=${normalizedId}`;
+
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        alert('共有用URLをクリップボードにコピーしました！\n' + shareUrl);
+      }).catch(err => {
+        console.error('Failed to copy:', err);
+        prompt('以下のURLをコピーしてください:', shareUrl);
+      });
+    }
+
+    // コメントを投稿
+    function submitComment(knowledgeId) {
+      const commentText = document.getElementById('newComment').value;
+      const author = document.getElementById('commentAuthor').value || '匿名';
+
+      if (!commentText.trim()) {
+        alert('コメントを入力してください');
+        return;
+      }
+
+      const tempId = `temp-${knowledgeId}-${Date.now()}`;
+      const optimisticComment = {
+        tempId,
+        text: commentText,
+        author,
+        postedAt: new Date(),
+        pending: true,
+      };
+
+      document.getElementById('newComment').value = '';
+      document.getElementById('commentAuthor').value = '';
+      addOptimisticComment(knowledgeId, optimisticComment);
+
+      google.script.run
+        .withSuccessHandler(function (success) {
+          if (success) {
+            confirmOptimisticComment(knowledgeId, tempId);
+            loadKnowledge(knowledgeId);
+          } else {
+            removeOptimisticComment(knowledgeId, tempId);
+            showError('コメントの投稿に失敗しました');
+          }
+        })
+        .withFailureHandler(function (error) {
+          removeOptimisticComment(knowledgeId, tempId);
+          showError(error);
+        })
+        .addComment(knowledgeId, commentText, author);
+    }
+
+    // いいねを追加
+    function addLike(knowledgeId) {
+      const knowledge = findKnowledgeById(knowledgeId);
+      if (!knowledge) {
+        showError('ナレッジが見つかりませんでした');
+        return;
+      }
+      if (isKnowledgeLiked(knowledgeId)) {
+        return;
+      }
+
+      if (knowledge.likePending) {
+        return;
+      }
+
+      const originalLikes = knowledge.likes || 0;
+      knowledge.likePending = true;
+      knowledge.likes = originalLikes + 1;
+      updateLikeDisplay(knowledgeId, knowledge.likes, true);
+
+      google.script.run
+        .withSuccessHandler(function (newLikes) {
+          knowledge.likes = newLikes;
+          knowledge.likePending = false;
+          markKnowledgeLiked(knowledgeId);
+          updateLikeDisplay(knowledgeId, newLikes, false);
+        })
+        .withFailureHandler(function (error) {
+          console.error('Error adding like:', error);
+          knowledge.likes = originalLikes;
+          knowledge.likePending = false;
+          updateLikeDisplay(knowledgeId, originalLikes, false);
+          showError('いいねの追加に失敗しました');
+        })
+        .addLike(knowledgeId, CLIENT_ID);
+    }
+
+    // エラーを表示
+    function showError(error) {
+      console.error('showError called with:', error);
+
+      // ユーザーフレンドリーなメッセージに変換
+      const errorMessage = error?.message || error?.toString() || '不明なエラー';
+
+      // 既存の一覧を消さずに、トーストまたはアラートで通知
+      // もし詳細モーダルが開こうとしていたなら、モーダル内でエラーを出すか閉じる
+      alert(`エラーが発生しました: ${errorMessage}`);
+
+      // もしローディング表示中なら消す
+      const grid = document.getElementById('knowledgeGrid');
+      if (grid && grid.innerHTML.includes('class="loading"')) {
+        // まだデータが何もない（ローディング中）場合はエラーを表示しても良い
+        grid.innerHTML = `<div class="error">データの読み込みに失敗しました: ${errorMessage}</div>`;
+      }
+    }
+
+    // モーダルの外側をクリックで閉じる
+    window.onclick = function (event) {
+      const detailModal = document.getElementById('detailModal');
+      const addModal = document.getElementById('addModal');
+      const editModal = document.getElementById('editModal');
+      if (event.target === detailModal) {
+        closeModal();
+      }
+      if (event.target === addModal) {
+        closeAddModal();
+      }
+      if (event.target === editModal) {
+        closeEditModal();
+      }
+    }
+
+    // 追加モーダルを開く
+    function openAddModal() {
+      document.getElementById('addModal').classList.add('active');
+      // フォームをリセット
+      document.getElementById('addKnowledgeForm').reset();
+      setMarkdownValue(addMarkdownEditor, 'addComment', '');
+      refreshMarkdownEditor(addMarkdownEditor);
+      const categorySelect = document.getElementById('addCategory');
+      if (categorySelect) {
+        categorySelect.value = DEFAULT_CATEGORY_VALUE || categorySelect.value;
+        renderMetadataFields('add');
+      }
+      setTags('add', []);
+    }
+
+    // 追加モーダルを閉じる
+    function closeAddModal() {
+      document.getElementById('addModal').classList.remove('active');
+    }
+
+    // ナレッジを追加
+    function submitKnowledge(event) {
+      event.preventDefault();
+
+      commitPendingTagInput('add');
+      const tagValues = getTags('add');
+      const metadata = collectMetadata('add');
+      const categorySelect = document.getElementById('addCategory');
+      const categoryValue = categorySelect ? categorySelect.value : '';
+
+      const knowledge = {
+        title: document.getElementById('addTitle').value.trim(),
+        url: document.getElementById('addUrl').value.trim(),
+        comment: getMarkdownValue(addMarkdownEditor, 'addComment'),
+        tags: tagValues,
+        postedBy: document.getElementById('addPostedBy').value.trim(),
+        thumbnailUrl: document.getElementById('addThumbnailUrl').value.trim(),
+        category: categoryValue,
+        metadata,
+      };
+
+      // バリデーション
+      if (!knowledge.title || !knowledge.url || !knowledge.postedBy) {
+        alert('タイトル、URL、投稿者は必須項目です');
+        return;
+      }
+
+      // 送信ボタンを無効化
+      const submitButton = event.target.querySelector('button[type="submit"]');
+      const originalText = submitButton.textContent;
+      submitButton.disabled = true;
+      submitButton.textContent = '追加中...';
+
+      google.script.run
+        .withSuccessHandler(function (result) {
+          try {
+            const response = typeof result === 'string' ? JSON.parse(result) : result;
+            if (response.success) {
+              closeAddModal();
+              loadKnowledge(); // 一覧を再読み込み
+              alert('ナレッジを追加しました！');
+            } else {
+              alert('エラー: ' + (response.error || 'ナレッジの追加に失敗しました'));
+            }
+          } catch (e) {
+            console.error('Error parsing response:', e);
+            alert('ナレッジの追加に失敗しました');
+          }
+          submitButton.disabled = false;
+          submitButton.textContent = originalText;
+        })
+        .withFailureHandler(function (error) {
+          console.error('Error adding knowledge:', error);
+          alert('エラー: ' + (error?.message || 'ナレッジの追加に失敗しました'));
+          submitButton.disabled = false;
+          submitButton.textContent = originalText;
+        })
+        .addKnowledge(knowledge);
+    }
+
+    // 編集モーダルを開く
+    function openEditModal(knowledgeId) {
+      // まず詳細を取得
+      google.script.run
+        .withSuccessHandler(function (result) {
+          let knowledge;
+          if (typeof result === 'string') {
+            try {
+              knowledge = JSON.parse(result);
+            } catch (e) {
+              console.error('Failed to parse JSON:', e);
+              showError('データの解析に失敗しました');
+              return;
+            }
+          } else {
+            knowledge = result;
+          }
+
+          if (!knowledge || knowledge === null) {
+            alert('ナレッジが見つかりませんでした');
+            return;
+          }
+
+          // フォームにデータをセット
+          document.getElementById('editKnowledgeId').value = knowledgeId;
+          document.getElementById('editTitle').value = knowledge.title || '';
+          document.getElementById('editUrl').value = knowledge.url || '';
+          setMarkdownValue(editMarkdownEditor, 'editComment', knowledge.comment || '');
+          document.getElementById('editPostedBy').value = knowledge.postedBy || '';
+          document.getElementById('editThumbnailUrl').value = knowledge.thumbnailUrl || '';
+          const editCategorySelect = document.getElementById('editCategory');
+          if (editCategorySelect) {
+            editCategorySelect.value =
+              knowledge.category || editCategorySelect.value || DEFAULT_CATEGORY_VALUE || '';
+            renderMetadataFields('edit', knowledge.metadata || {});
+          } else {
+            renderMetadataFields('edit', knowledge.metadata || {});
+          }
+          setTags('edit', knowledge.tags || []);
+
+          // モーダルを開く
+          document.getElementById('editModal').classList.add('active');
+          refreshMarkdownEditor(editMarkdownEditor);
+        })
+        .withFailureHandler(function (error) {
+          console.error('Error loading knowledge for edit:', error);
+          alert('ナレッジの読み込みに失敗しました');
+        })
+        .getKnowledgeDetail(knowledgeId);
+    }
+
+    // 編集モーダルを閉じる
+    function closeEditModal() {
+      document.getElementById('editModal').classList.remove('active');
+    }
+
+    // ナレッジを更新
+    function submitUpdate(event) {
+      event.preventDefault();
+
+      const knowledgeId = parseInt(document.getElementById('editKnowledgeId').value);
+      commitPendingTagInput('edit');
+      const editTagValues = getTags('edit');
+      const editMetadata = collectMetadata('edit');
+      const editCategorySelect = document.getElementById('editCategory');
+      const editCategoryValue = editCategorySelect ? editCategorySelect.value : '';
+      const knowledge = {
+        title: document.getElementById('editTitle').value.trim(),
+        url: document.getElementById('editUrl').value.trim(),
+        comment: getMarkdownValue(editMarkdownEditor, 'editComment'),
+        postedBy: document.getElementById('editPostedBy').value.trim(),
+        thumbnailUrl: document.getElementById('editThumbnailUrl').value.trim(),
+        tags: editTagValues,
+        category: editCategoryValue,
+        metadata: editMetadata,
+      };
+
+      // バリデーション
+      if (!knowledge.title || !knowledge.url || !knowledge.postedBy) {
+        alert('タイトル、URL、投稿者は必須項目です');
+        return;
+      }
+
+      // 送信ボタンを無効化
+      const submitButton = event.target.querySelector('button[type="submit"]');
+      const originalText = submitButton.textContent;
+      submitButton.disabled = true;
+      submitButton.textContent = '更新中...';
+
+      google.script.run
+        .withSuccessHandler(function (result) {
+          try {
+            const response = typeof result === 'string' ? JSON.parse(result) : result;
+            if (response.success) {
+              closeEditModal();
+              closeModal(); // 詳細モーダルも閉じる
+              loadKnowledge(); // 一覧を再読み込み
+              alert('ナレッジを更新しました！');
+            } else {
+              alert('エラー: ' + (response.error || 'ナレッジの更新に失敗しました'));
+            }
+          } catch (e) {
+            console.error('Error parsing response:', e);
+            alert('ナレッジの更新に失敗しました');
+          }
+          submitButton.disabled = false;
+          submitButton.textContent = originalText;
+        })
+        .withFailureHandler(function (error) {
+          console.error('Error updating knowledge:', error);
+          alert('エラー: ' + (error?.message || 'ナレッジの更新に失敗しました'));
+          submitButton.disabled = false;
+          submitButton.textContent = originalText;
+        })
+        .updateKnowledge(knowledgeId, knowledge);
+    }
+  </script>

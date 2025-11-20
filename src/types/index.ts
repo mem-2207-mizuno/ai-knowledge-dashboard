@@ -47,3 +47,37 @@ export interface TagRecord {
   color?: string;
   aliases: string[];
 }
+
+export type MetadataFieldType =
+  | 'text'
+  | 'textarea'
+  | 'url'
+  | 'date'
+  | 'select'
+  | 'multiselect';
+
+export interface CategoryFieldOption {
+  label: string;
+  value: string;
+}
+
+export interface CategoryMetadataField {
+  key: string;
+  label: string;
+  type: MetadataFieldType;
+  required?: boolean;
+  placeholder?: string;
+  helperText?: string;
+  options?: CategoryFieldOption[];
+  defaultValue?: string | string[];
+}
+
+export interface CategoryFormConfig {
+  key: PostCategory;
+  label: string;
+  icon: string;
+  description?: string;
+  metadataFields: CategoryMetadataField[];
+  statusOptions?: CategoryFieldOption[];
+  defaultStatus?: string;
+}

@@ -52,11 +52,33 @@ build({
       console.log('appsscript.json copied from root.');
     }
 
+    const copyHtmlDir = (dir: string) => {
+      if (!fs.existsSync(dir)) {
+        return;
+      }
+      fs.readdirSync(dir).forEach((file) => {
+        const srcPath = path.join(dir, file);
+        if (fs.statSync(srcPath).isDirectory()) {
+          return;
+        }
+        if (!file.endsWith('.html')) {
+          return;
+        }
+        const destPath = path.join(distDir, file);
+        fs.copyFileSync(srcPath, destPath);
+        console.log(`${file} copied from ${dir}.`);
+      });
+    };
+
     // index.htmlのコピー
     if (fs.existsSync('src/index.html')) {
       fs.copyFileSync('src/index.html', path.join(distDir, 'index.html'));
       console.log('index.html copied.');
     }
+
+    copyHtmlDir(path.join('src', 'partials'));
+    copyHtmlDir(path.join('src', 'styles'));
+    copyHtmlDir(path.join('src', 'scripts'));
   })
   .catch((e) => {
     console.error(e);
