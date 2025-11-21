@@ -316,6 +316,11 @@
     color: var(--muted);
     font-size: 14px;
     line-height: 1.5;
+
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    max-width: 100%;
   }
 
   .card-tags {
@@ -385,8 +390,8 @@
   .modal-content {
     background: #fff;
     border-radius: 18px;
-    padding: 28px;
-    max-width: 920px;
+    padding: 28px 60px;
+    max-width: 984px;
     width: 100%;
     max-height: 90vh;
     overflow-y: auto;
@@ -398,6 +403,7 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
+    gap: 12px;
   }
 
   .modal-title-group {
@@ -416,6 +422,14 @@
     font-size: 24px;
     cursor: pointer;
     color: var(--muted);
+    display: flex;
+    align-items: center;
+  }
+
+  .modal-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
   }
 
   .modal-body {
@@ -434,6 +448,48 @@
     background: #f9f8f4;
     padding: 16px;
     border-radius: 12px;
+  }
+
+  .detail-meta-block {
+    margin: 14px 0 18px;
+    padding: 12px;
+    border-radius: 10px;
+    background: #f8f9fb;
+    border: 1px solid #e5e8ee;
+  }
+
+  .detail-meta-title {
+    font-size: 13px;
+    color: #5f6a7d;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+
+  .detail-meta-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 8px 12px;
+  }
+
+  .detail-meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    background: #fff;
+    border: 1px solid #e8ecf2;
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+
+  .detail-meta-label {
+    font-size: 12px;
+    color: #6b7280;
+    font-weight: 600;
+  }
+
+  .detail-meta-value {
+    font-size: 14px;
+    color: #2f3437;
   }
 
   .detail-item label {
@@ -484,6 +540,16 @@
     align-items: center;
   }
 
+  .detail-property-list .property-row {
+    padding: 10px 0;
+    align-items: flex-start;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .detail-property-list .property-row:last-child {
+    border-bottom: none;
+  }
+
   .property-label {
     width: 140px;
     font-size: 14px;
@@ -516,6 +582,53 @@
   .property-control textarea:focus {
     outline: none;
     border-bottom-color: var(--primary);
+  }
+
+  .property-value {
+    font-size: 15px;
+    color: #2f3437;
+    line-height: 1.5;
+    word-break: break-word;
+  }
+
+  .icon-button-group {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .icon-button {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    color: #4b5563;
+    padding: 0;
+  }
+
+  .icon-button:hover {
+    border-color: #d1d5db;
+    background: #f8fafc;
+  }
+
+  .icon-button:active {
+    transform: translateY(1px);
+  }
+
+  .icon-button .material-icons {
+    font-size: 20px;
+  }
+
+  .icon-button.active {
+    border-color: #f59e0b;
+    background: #fef9c3;
+    color: #d97706;
   }
 
   .property-helper {
@@ -584,33 +697,69 @@
   }
 
   .notion-editor-block {
-    border-radius: 14px;
+    /* border-radius: 14px;
     background: #fdfcf7;
     padding: 8px;
-    border: 1px solid rgba(47, 52, 55, 0.08);
+    border: 1px solid rgba(47, 52, 55, 0.08); */
   }
 
   .notion-editor-heading {
     font-size: 13px;
     color: var(--muted);
     margin-bottom: 6px;
+    font-weight: 600;
   }
 
-  .EasyMDEContainer {
-    border-radius: 12px;
-    border: 1px solid rgba(47, 52, 55, 0.08);
-    overflow: hidden;
-    background: #fff;
-  }
-
-  .EasyMDEContainer .editor-toolbar {
+  /* BlockNote styles - minimal wrapper to avoid崩れ */
+  .blocknote-shell {
+    padding: 8px 0;
     background: transparent;
-    border-bottom: 1px solid rgba(47, 52, 55, 0.1);
-  }
-
-  .EasyMDEContainer .CodeMirror {
-    min-height: 220px;
     border: none;
+  }
+
+  .blocknote-shell .bn-editor {
+    min-height: 320px;
+    background: #fff;
+    border-radius: 12px;
+    /* border: 1px solid #d3d8e0; */
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+    position: relative;
+  }
+
+  .blocknote-shell .bn-editor:focus-within {
+    /* border-color: #2563eb;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.16); */
+  }
+
+  .blocknote-shell.readonly {
     background: transparent;
+    padding: 0;
+  }
+
+  .blocknote-shell.readonly .bn-editor {
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    min-height: 0;
+  }
+
+  .blocknote-shell .bn-editor .bn-container {
+    max-width: 100%;
+    padding: 12px 16px 12px 52px;
+    /* 左側にメニュー用の余白を確保 */
+  }
+
+  .blocknote-shell .bn-editor .bn-content {
+    padding-bottom: 14px;
+  }
+
+  /* サイドメニューをエディタ内に収める */
+  .blocknote-shell .bn-editor .bn-side-menu {
+    left: 14px;
+  }
+
+  .notion-form .blocknote-shell .bn-editor {
+    margin-left: -54px;
   }
 </style>

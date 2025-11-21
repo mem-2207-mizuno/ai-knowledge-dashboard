@@ -1,6 +1,7 @@
 import { build } from 'esbuild';
 import * as fs from 'fs';
 import * as path from 'path';
+import { transformSync } from '@babel/core';
 
 const distDir = 'dist';
 
@@ -58,23 +59,62 @@ async function buildServerBundle() {
   console.log('Server bundle complete.');
 }
 
+function transpileWithBabel(code: string): string {
+  const result = transformSync(code, {
+    presets: [
+      [
+        '@babel/preset-env',
+        {
+          // かなり低いターゲットにしてテンプレートリテラル等も確実にダウンレベル
+          targets: {
+            ie: '11',
+          },
+          useBuiltIns: false,
+          modules: false,
+        },
+      ],
+    ],
+    sourceMaps: false,
+    babelrc: false,
+    configFile: false,
+    comments: false,
+    compact: false,
+  });
+  if (!result?.code) {
+    throw new Error('Babel transform failed: no output code.');
+  }
+  return result.code;
+}
+
 async function buildFrontendBundle() {
   const result = await build({
     entryPoints: ['src/frontend/main.ts'],
     bundle: true,
     write: false,
+    jsx: 'automatic',
     format: 'iife',
-    target: 'es2020',
+    target: 'es2016',
     platform: 'browser',
+    conditions: ['browser', 'style', 'default'],
     outfile: 'frontend.js',
   });
 
-  const output = result.outputFiles?.[0];
-  if (!output) {
-    throw new Error('Frontend bundle failed: no output files.');
+  const outputFiles = result.outputFiles || [];
+  const jsOutput = outputFiles.find(file => file.path.endsWith('.js'));
+  if (!jsOutput) {
+    throw new Error('Frontend bundle failed: no JS output file.');
   }
-  const scriptContent = `<script>${output.text}</script>`;
-  fs.writeFileSync(path.join(distDir, 'scripts_bundle.html'), scriptContent);
+
+  const transpiledJs = transpileWithBabel(jsOutput.text);
+
+  const cssOutput = outputFiles.find(file => file.path.endsWith('.css'));
+  const chunks: string[] = [];
+  if (cssOutput) {
+    chunks.push(`<style>${cssOutput.text}</style>`);
+  }
+  chunks.push(`<script>${transpiledJs}</script>`);
+
+  fs.writeFileSync(path.join(distDir, 'scripts_bundle.html'), chunks.join('\n'));
   console.log('Frontend bundle written to scripts_bundle.html');
 }
 

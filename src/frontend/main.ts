@@ -23,6 +23,8 @@ import {
 } from './modules/controllers/detailController';
 import { initFormsController, submitUpdate } from './modules/controllers/formsController';
 import { showError } from './modules/system/errors';
+import '@blocknote/core/style.css';
+import '@blocknote/mantine/style.css';
 
 declare const SERVER_DATA: any;
 initClientState();

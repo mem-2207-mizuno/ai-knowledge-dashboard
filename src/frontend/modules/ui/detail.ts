@@ -10,9 +10,49 @@ import {
   setAllKnowledge,
 } from '../data/state';
 import { postComment, postLike } from '../data/api';
+import { renderReadonlyMarkdown } from './editors';
+import { CATEGORY_FORM_CONFIGS } from '../data/constants';
 
 const LIKES_BUTTON_PREFIX = 'like-btn-';
 const MODAL_LIKE_BUTTON_PREFIX = 'modal-like-btn-';
+
+function renderMetadataSection(knowledge: any): string {
+  const categoryKey = knowledge?.category;
+  const config = CATEGORY_FORM_CONFIGS.find(cat => cat.key === categoryKey);
+  const metadata = knowledge?.metadata || {};
+  if (!config || !config.metadataFields || config.metadataFields.length === 0) {
+    return '';
+  }
+
+  const items = config.metadataFields
+    .map(field => {
+      const value = metadata[field.key];
+      if (
+        value === undefined ||
+        value === null ||
+        (typeof value === 'string' && value.trim() === '') ||
+        (Array.isArray(value) && value.length === 0)
+      ) {
+        return '';
+      }
+      const display =
+        Array.isArray(value) && value.length > 0 ? value.join(', ') : String(value).trim();
+      return `<div class="detail-meta-item"><span class="detail-meta-label">${field.label}</span><span class="detail-meta-value">${display}</span></div>`;
+    })
+    .filter(Boolean)
+    .join('');
+
+  if (!items) {
+    return '';
+  }
+
+  return `
+    <div class="detail-meta-block">
+      <div class="detail-meta-title">カテゴリ固有の項目</div>
+      <div class="detail-meta-list">${items}</div>
+    </div>
+  `;
+}
 
 export function refreshCommentsUI(knowledgeId: number) {
   const knowledge = findKnowledgeById(knowledgeId);
@@ -63,8 +103,21 @@ export function displayDetail(knowledge: any) {
   const modal = document.getElementById('detailModal');
   const modalTitle = document.getElementById('modalTitle');
   const modalBody = document.getElementById('modalBody');
+  let modalActions = document.getElementById('modalActions');
   if (!modal || !modalTitle || !modalBody) {
     throw new Error('モーダルを描画できませんでした');
+  }
+  if (!modalActions) {
+    const header = modal.querySelector('.modal-header');
+    if (!header) {
+      throw new Error('モーダルを描画できませんでした');
+    }
+    const actionsWrapper = document.createElement('div');
+    actionsWrapper.className = 'modal-actions';
+    modalActions = document.createElement('div');
+    modalActions.id = 'modalActions';
+    actionsWrapper.appendChild(modalActions);
+    header.appendChild(actionsWrapper);
   }
 
   modalTitle.textContent = knowledge.title;
@@ -83,14 +136,16 @@ export function displayDetail(knowledge: any) {
   const tagsHtml = (knowledge.tags || [])
     .map((tag: string) => `<span class="card-tag">${tag}</span>`)
     .join('');
+  const metadataHtml = renderMetadataSection(knowledge);
+  const urlValue = knowledge.url
+    ? `<a href="${knowledge.url}" target="_blank">${knowledge.url}</a>`
+    : 'URLは登録されていません';
 
   const commentsArray = Array.isArray(knowledge.comments) ? knowledge.comments : [];
   const commentsHtml = renderCommentsHtml(commentsArray);
   const isLiked = knowledge.id ? isKnowledgeLiked(knowledge.id) : false;
   const likesCount = knowledge.likes || 0;
-  const modalLikeLabel = isLiked ? `❤️ いいね済 ${likesCount}` : `❤️ いいね ${likesCount}`;
-  const modalLikeClass = `like-button ${isLiked ? 'liked' : ''}`;
-  const modalLikeDisabled = isLiked ? 'disabled' : '';
+  const modalLikeClass = `icon-button ${isLiked ? 'active' : ''}`;
   const knowledgeUrl = knowledge.url || '';
   const urlMarkup = knowledgeUrl
     ? `<a href="${knowledgeUrl}" target="_blank">${knowledgeUrl}</a>`
@@ -102,12 +157,27 @@ export function displayDetail(knowledge: any) {
           <span class="status-pill">${statusLabel}</span>
         </div>
         ${knowledge.thumbnailUrl ? `<img src="${knowledge.thumbnailUrl}" alt="${knowledge.title}" style="width: 100%; max-height: 300px; object-fit: cover; border-radius: 5px; margin-bottom: 20px;">` : ''}
-        <p><strong>URL:</strong> ${urlMarkup}</p>
-        <p><strong>投稿者:</strong> ${knowledge.postedBy}</p>
-        <p><strong>投稿日時:</strong> ${dateStr}</p>
-        <div class="card-tags" style="margin: 15px 0;">${tagsHtml}</div>
+        <div class="detail-property-list">
+          <div class="property-row">
+            <div class="property-label">参照URL</div>
+            <div class="property-control"><div class="property-value">${urlValue}</div></div>
+          </div>
+          <div class="property-row">
+            <div class="property-label">投稿者</div>
+            <div class="property-control"><div class="property-value">${knowledge.postedBy || '不明'}</div></div>
+          </div>
+          <div class="property-row">
+            <div class="property-label">投稿日時</div>
+            <div class="property-control"><div class="property-value">${dateStr}</div></div>
+          </div>
+          <div class="property-row">
+            <div class="property-label">タグ</div>
+            <div class="property-control"><div class="card-tags">${tagsHtml || '<span class="property-value">なし</span>'}</div></div>
+          </div>
+        </div>
+        ${metadataHtml}
         <p><strong>説明:</strong></p>
-        <div class="markdown-content">${renderMarkdown(knowledge.comment || '（説明なし）')}</div>
+        <div id="knowledgeDetailBody" class="blocknote-shell readonly"></div>
         <div style="margin: 20px 0;">
           <h3>コメント</h3>
           <div id="commentsList">${commentsHtml}</div>
@@ -117,21 +187,25 @@ export function displayDetail(knowledge: any) {
             <button onclick="submitComment(${knowledge.id})" style="padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; margin-left: 10px;">投稿</button>
           </div>
         </div>
-        <div style="display: flex; gap: 10px; margin-top: 20px;">
-          <button id="modal-like-btn-${knowledge.id}" class="${modalLikeClass}" onclick="addLike(${knowledge.id})" style="flex: 1;" ${modalLikeDisabled}>
-            ${modalLikeLabel}
-          </button>
-          <button onclick="copyShareLink(${knowledge.id})" style="padding: 10px 20px; background: #f5f5f5; color: #333; border: 1px solid #ddd; border-radius: 5px; cursor: pointer; font-size: 16px;">
-             🔗 リンクをコピー
-          </button>
-          <button onclick="openEditModal(${knowledge.id})" style="padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold;">
-            編集
-          </button>
-        </div>
       `;
 
   modal.classList.add('active');
   updateLikeDisplay(knowledge.id, knowledge.likes, knowledge.likePending);
+  renderReadonlyMarkdown('knowledgeDetailBody', knowledge.comment || '（説明なし）');
+
+  modalActions.innerHTML = `
+    <div class="icon-button-group">
+      <button id="modal-like-btn-${knowledge.id}" class="${modalLikeClass}" onclick="addLike(${knowledge.id})" title="お気に入り">
+        <span class="material-icons">${isLiked ? 'star' : 'star_border'}</span>
+      </button>
+      <button class="icon-button" onclick="copyShareLink(${knowledge.id})" title="リンクをコピー">
+        <span class="material-icons">link</span>
+      </button>
+      <button class="icon-button" onclick="openEditModal(${knowledge.id})" title="編集">
+        <span class="material-icons">edit</span>
+      </button>
+    </div>
+  `;
 }
 
 export function closeDetailModal() {
