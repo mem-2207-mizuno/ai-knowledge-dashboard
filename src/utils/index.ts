@@ -10,7 +10,7 @@ export function parseComments(commentsStr: string): Comment[] {
 
   try {
     return JSON.parse(commentsStr);
-  } catch (error) {
+  } catch {
     return [];
   }
 }
@@ -21,7 +21,7 @@ export function safeJsonParse<T>(value: string | null, fallback: T): T {
   }
   try {
     return JSON.parse(value) as T;
-  } catch (error) {
+  } catch {
     return fallback;
   }
 }
@@ -34,5 +34,5 @@ export function slugifyTag(name: string): string {
     .toLowerCase()
     .trim()
     .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9\-]/g, '');
+    .replace(/[^a-z0-9-]/g, '');
 }

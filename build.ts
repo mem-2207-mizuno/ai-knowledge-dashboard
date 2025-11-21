@@ -29,7 +29,7 @@ const copyHtmlDir = (dir: string) => {
   if (!fs.existsSync(dir)) {
     return;
   }
-  fs.readdirSync(dir).forEach((file) => {
+  fs.readdirSync(dir).forEach(file => {
     const srcPath = path.join(dir, file);
     if (fs.statSync(srcPath).isDirectory()) {
       return;
@@ -80,10 +80,7 @@ async function buildFrontendBundle() {
 
 async function copyStaticFiles() {
   if (fs.existsSync('src/appsscript.json')) {
-    fs.copyFileSync(
-      'src/appsscript.json',
-      path.join(distDir, 'appsscript.json')
-    );
+    fs.copyFileSync('src/appsscript.json', path.join(distDir, 'appsscript.json'));
     console.log('appsscript.json copied from src.');
   } else if (fs.existsSync('appsscript.json')) {
     fs.copyFileSync('appsscript.json', path.join(distDir, 'appsscript.json'));

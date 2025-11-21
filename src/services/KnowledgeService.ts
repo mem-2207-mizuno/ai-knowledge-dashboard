@@ -1,11 +1,5 @@
 import { SheetService } from './SheetService';
-import {
-  Knowledge,
-  Comment,
-  TagRecord,
-  PostCategory,
-  CategoryFormConfig,
-} from '../types';
+import { Knowledge, Comment, TagRecord, PostCategory, CategoryFormConfig } from '../types';
 import { safeJsonParse, slugifyTag } from '../utils';
 import { CATEGORY_FORM_CONFIGS } from '../config/categoryFormConfig';
 
@@ -88,34 +82,32 @@ export class KnowledgeService {
       posts: SheetService.getOrCreateSheet(
         KNOWLEDGE_SHEET_NAMES.POSTS,
         KNOWLEDGE_SHEET_HEADERS.POSTS,
-        spreadsheet
+        spreadsheet,
       ),
       tags: SheetService.getOrCreateSheet(
         KNOWLEDGE_SHEET_NAMES.TAGS,
         KNOWLEDGE_SHEET_HEADERS.TAGS,
-        spreadsheet
+        spreadsheet,
       ),
       postTags: SheetService.getOrCreateSheet(
         KNOWLEDGE_SHEET_NAMES.POST_TAGS,
         KNOWLEDGE_SHEET_HEADERS.POST_TAGS,
-        spreadsheet
+        spreadsheet,
       ),
       comments: SheetService.getOrCreateSheet(
         KNOWLEDGE_SHEET_NAMES.COMMENTS,
         KNOWLEDGE_SHEET_HEADERS.COMMENTS,
-        spreadsheet
+        spreadsheet,
       ),
       likes: SheetService.getOrCreateSheet(
         KNOWLEDGE_SHEET_NAMES.LIKES,
         KNOWLEDGE_SHEET_HEADERS.LIKES,
-        spreadsheet
+        spreadsheet,
       ),
     };
   }
 
-  private static getSheetValues(
-    sheet: GoogleAppsScript.Spreadsheet.Sheet
-  ): any[][] {
+  private static getSheetValues(sheet: GoogleAppsScript.Spreadsheet.Sheet): any[][] {
     const lastRow = sheet.getLastRow();
     const lastColumn = sheet.getLastColumn();
     if (lastRow < 2 || lastColumn === 0) {
@@ -139,7 +131,7 @@ export class KnowledgeService {
 
   private static parsePostRows(rows: any[][]): PostRow[] {
     return rows
-      .map((row) => {
+      .map(row => {
         if (!row || row.length === 0) {
           return null;
         }
@@ -157,10 +149,7 @@ export class KnowledgeService {
         const likesCount = Number(row[8]) || 0;
         const thumbnailUrl = (row[9] as string) || '';
         const status = (row[10] as string) || DEFAULT_STATUS;
-        const metadata = safeJsonParse<Record<string, any>>(
-          row[11] as string,
-          {}
-        );
+        const metadata = safeJsonParse<Record<string, any>>(row[11] as string, {});
 
         return {
           id,
@@ -180,38 +169,38 @@ export class KnowledgeService {
       .filter((row): row is PostRow => row !== null);
   }
 
-  private static loadTagRecords(
-    sheet: GoogleAppsScript.Spreadsheet.Sheet
-  ): TagRecord[] {
+  private static loadTagRecords(sheet: GoogleAppsScript.Spreadsheet.Sheet): TagRecord[] {
     const rows = this.getSheetValues(sheet);
-    return rows
-      .map((row) => {
-        const id = Number(row[0]);
-        if (!id || Number.isNaN(id)) {
-          return null;
-        }
-        const name = (row[1] as string) || '';
-        if (!name) {
-          return null;
-        }
-        const slug = (row[2] as string) || slugifyTag(name);
-        const color = (row[3] as string) || undefined;
-        const aliases = safeJsonParse<string[]>(row[4] as string, []);
+    const tags: TagRecord[] = [];
 
-        return {
-          id,
-          name,
-          slug,
-          color,
-          aliases,
-        };
-      })
-      .filter((tag): tag is TagRecord => tag !== null);
+    rows.forEach(row => {
+      const id = Number(row[0]);
+      if (!id || Number.isNaN(id)) {
+        return;
+      }
+      const name = (row[1] as string) || '';
+      if (!name) {
+        return;
+      }
+      const slug = (row[2] as string) || slugifyTag(name);
+      const color = (row[3] as string) || undefined;
+      const aliases = safeJsonParse<string[]>(row[4] as string, []);
+
+      tags.push({
+        id,
+        name,
+        slug,
+        color,
+        aliases,
+      });
+    });
+
+    return tags;
   }
 
   private static buildTagMap(records: TagRecord[]): Map<number, TagRecord> {
     const map = new Map<number, TagRecord>();
-    records.forEach((tag) => {
+    records.forEach(tag => {
       map.set(tag.id, tag);
     });
     return map;
@@ -219,12 +208,12 @@ export class KnowledgeService {
 
   private static buildTagsByPost(
     sheet: GoogleAppsScript.Spreadsheet.Sheet,
-    tagMap: Map<number, TagRecord>
+    tagMap: Map<number, TagRecord>,
   ): Map<number, string[]> {
     const rows = this.getSheetValues(sheet);
     const tagsByPost = new Map<number, string[]>();
 
-    rows.forEach((row) => {
+    rows.forEach(row => {
       const postId = Number(row[0]);
       const tagId = Number(row[1]);
       if (!postId || !tagId || Number.isNaN(postId) || Number.isNaN(tagId)) {
@@ -243,12 +232,12 @@ export class KnowledgeService {
   }
 
   private static buildCommentsByPost(
-    sheet: GoogleAppsScript.Spreadsheet.Sheet
+    sheet: GoogleAppsScript.Spreadsheet.Sheet,
   ): Map<number, Comment[]> {
     const rows = this.getSheetValues(sheet);
     const comments = new Map<number, Comment[]>();
 
-    rows.forEach((row) => {
+    rows.forEach(row => {
       const id = Number(row[0]);
       const postId = Number(row[1]);
       if (!postId || Number.isNaN(postId)) {
@@ -276,15 +265,11 @@ export class KnowledgeService {
   private static buildKnowledgeObject(
     post: PostRow,
     tagNames: string[],
-    comments: Comment[]
+    comments: Comment[],
   ): Knowledge {
     const metadata = post.metadata || {};
     const primaryUrl =
-      metadata.url ||
-      metadata.primaryUrl ||
-      metadata.demoUrl ||
-      metadata.referenceUrl ||
-      '';
+      metadata.url || metadata.primaryUrl || metadata.demoUrl || metadata.referenceUrl || '';
     const tags = tagNames.length > 0 ? tagNames : post.tagsCache;
 
     return {
@@ -295,7 +280,7 @@ export class KnowledgeService {
       tags,
       postedAt: new Date(post.postedAt),
       postedBy: post.postedBy,
-      comments: comments.map((comment) => ({
+      comments: comments.map(comment => ({
         ...comment,
         postedAt: new Date(comment.postedAt),
       })),
@@ -307,10 +292,7 @@ export class KnowledgeService {
     };
   }
 
-  private static getNextId(
-    sheet: GoogleAppsScript.Spreadsheet.Sheet,
-    columnIndex = 1
-  ): number {
+  private static getNextId(sheet: GoogleAppsScript.Spreadsheet.Sheet, columnIndex = 1): number {
     const lastRow = sheet.getLastRow();
     if (lastRow < 2) {
       return 1;
@@ -318,16 +300,13 @@ export class KnowledgeService {
     const values = sheet
       .getRange(2, columnIndex, lastRow - 1, 1)
       .getValues()
-      .map((row) => Number(row[0]))
-      .filter((value) => !Number.isNaN(value));
+      .map(row => Number(row[0]))
+      .filter(value => !Number.isNaN(value));
     const max = values.length > 0 ? Math.max(...values) : 0;
     return max + 1;
   }
 
-  private static findRowById(
-    sheet: GoogleAppsScript.Spreadsheet.Sheet,
-    id: number
-  ): number | null {
+  private static findRowById(sheet: GoogleAppsScript.Spreadsheet.Sheet, id: number): number | null {
     const lastRow = sheet.getLastRow();
     if (lastRow < 2) {
       return null;
@@ -348,18 +327,18 @@ export class KnowledgeService {
     }
     if (Array.isArray(tags)) {
       return tags
-        .map((tag) => tag.trim())
+        .map(tag => tag.trim())
         .filter((tag, index, arr) => tag && arr.indexOf(tag) === index);
     }
     return tags
       .split(',')
-      .map((tag) => tag.trim())
+      .map(tag => tag.trim())
       .filter((tag, index, arr) => tag && arr.indexOf(tag) === index);
   }
 
   private static getOrCreateTagIds(
     tagNames: string[],
-    sheets: SheetMap
+    sheets: SheetMap,
   ): { ids: number[]; names: string[] } {
     if (tagNames.length === 0) {
       return { ids: [], names: [] };
@@ -367,12 +346,12 @@ export class KnowledgeService {
 
     const tagRecords = this.loadTagRecords(sheets.tags);
     const existingBySlug = new Map<string, TagRecord>();
-    tagRecords.forEach((tag) => existingBySlug.set(tag.slug, tag));
+    tagRecords.forEach(tag => existingBySlug.set(tag.slug, tag));
 
     const ids: number[] = [];
     const normalizedNames: string[] = [];
 
-    tagNames.forEach((tagName) => {
+    tagNames.forEach(tagName => {
       const slug = slugifyTag(tagName);
       if (!slug) {
         return;
@@ -384,14 +363,7 @@ export class KnowledgeService {
       } else {
         const newId = this.getNextId(sheets.tags);
         const now = new Date();
-        sheets.tags.appendRow([
-          newId,
-          tagName,
-          slug,
-          '',
-          JSON.stringify([]),
-          now,
-        ]);
+        sheets.tags.appendRow([newId, tagName, slug, '', JSON.stringify([]), now]);
         const record: TagRecord = {
           id: newId,
           name: tagName,
@@ -410,7 +382,7 @@ export class KnowledgeService {
   private static replacePostTags(
     postId: number,
     tagIds: number[],
-    sheet: GoogleAppsScript.Spreadsheet.Sheet
+    sheet: GoogleAppsScript.Spreadsheet.Sheet,
   ) {
     const lastRow = sheet.getLastRow();
     if (lastRow >= 2) {
@@ -423,7 +395,7 @@ export class KnowledgeService {
       }
     }
 
-    tagIds.forEach((tagId) => {
+    tagIds.forEach(tagId => {
       sheet.appendRow([postId, tagId, new Date()]);
     });
   }
@@ -436,12 +408,12 @@ export class KnowledgeService {
     const tagsByPost = this.buildTagsByPost(sheets.postTags, tagMap);
     const commentsByPost = this.buildCommentsByPost(sheets.comments);
 
-    return posts.map((post) =>
+    return posts.map(post =>
       this.buildKnowledgeObject(
         post,
         tagsByPost.get(post.id) || [],
-        commentsByPost.get(post.id) || []
-      )
+        commentsByPost.get(post.id) || [],
+      ),
     );
   }
 
@@ -450,7 +422,7 @@ export class KnowledgeService {
     filters?: {
       searchWord?: string;
       tags?: string[];
-    }
+    },
   ): Knowledge[] {
     if (!filters) {
       return list;
@@ -460,17 +432,15 @@ export class KnowledgeService {
     if (filters.searchWord) {
       const searchLower = filters.searchWord.toLowerCase();
       result = result.filter(
-        (item) =>
+        item =>
           (item.title && item.title.toLowerCase().includes(searchLower)) ||
           (item.comment && item.comment.toLowerCase().includes(searchLower)) ||
-          (item.url && item.url.toLowerCase().includes(searchLower))
+          (item.url && item.url.toLowerCase().includes(searchLower)),
       );
     }
 
     if (filters.tags && filters.tags.length > 0) {
-      result = result.filter((item) =>
-        filters.tags!.some((tag) => item.tags?.includes(tag))
-      );
+      result = result.filter(item => filters.tags!.some(tag => item.tags?.includes(tag)));
     }
 
     return result;
@@ -479,14 +449,10 @@ export class KnowledgeService {
   /**
    * ナレッジ一覧を取得する
    */
-  static getList(filters?: {
-    searchWord?: string;
-    tags?: string[];
-  }): Knowledge[] {
+  static getList(filters?: { searchWord?: string; tags?: string[] }): Knowledge[] {
     try {
       const useCache =
-        !filters ||
-        (!filters.searchWord && (!filters.tags || filters.tags.length === 0));
+        !filters || (!filters.searchWord && (!filters.tags || filters.tags.length === 0));
 
       if (useCache) {
         try {
@@ -503,11 +469,7 @@ export class KnowledgeService {
       const list = this.assembleKnowledgeList();
       if (useCache && list.length > 0) {
         try {
-          CacheService.getScriptCache().put(
-            CACHE_KEY_LIST,
-            JSON.stringify(list),
-            CACHE_DURATION
-          );
+          CacheService.getScriptCache().put(CACHE_KEY_LIST, JSON.stringify(list), CACHE_DURATION);
         } catch (e) {
           console.error('Failed to cache data', e);
         }
@@ -530,7 +492,7 @@ export class KnowledgeService {
       return null;
     }
     const list = this.getList();
-    const item = list.find((knowledge) => knowledge.id === id);
+    const item = list.find(knowledge => knowledge.id === id);
     return item || null;
   }
 
@@ -563,10 +525,7 @@ export class KnowledgeService {
     try {
       const sheets = this.getSheets();
       const tagNames = this.normalizeTagInput(knowledge.tags);
-      const { ids: tagIds, names: normalizedTagNames } = this.getOrCreateTagIds(
-        tagNames,
-        sheets
-      );
+      const { ids: tagIds, names: normalizedTagNames } = this.getOrCreateTagIds(tagNames, sheets);
 
       const now = new Date();
       const newId = this.getNextId(sheets.posts);
@@ -592,7 +551,7 @@ export class KnowledgeService {
       ]);
 
       if (tagIds.length > 0) {
-        tagIds.forEach((tagId) => {
+        tagIds.forEach(tagId => {
           sheets.postTags.appendRow([newId, tagId, now]);
         });
       }
@@ -620,7 +579,7 @@ export class KnowledgeService {
       category?: string;
       status?: string;
       metadata?: Record<string, any>;
-    }
+    },
   ): { success: boolean; id?: number; error?: string } {
     try {
       const sheets = this.getSheets();
@@ -630,10 +589,7 @@ export class KnowledgeService {
       }
 
       const tagNames = this.normalizeTagInput(knowledge.tags);
-      const { ids: tagIds, names: normalizedTagNames } = this.getOrCreateTagIds(
-        tagNames,
-        sheets
-      );
+      const { ids: tagIds, names: normalizedTagNames } = this.getOrCreateTagIds(tagNames, sheets);
 
       const metadata = {
         url: knowledge.url || '',
@@ -651,9 +607,7 @@ export class KnowledgeService {
         .getRange(rowNumber, 2, 1, KNOWLEDGE_SHEET_HEADERS.POSTS.length - 1)
         .setValues([
           [
-            (knowledge.category as PostCategory) ||
-              rowValues[1] ||
-              DEFAULT_CATEGORY,
+            (knowledge.category as PostCategory) || rowValues[1] || DEFAULT_CATEGORY,
             knowledge.title || '',
             knowledge.comment || '',
             JSON.stringify(normalizedTagNames),
@@ -680,11 +634,7 @@ export class KnowledgeService {
   /**
    * コメントを追加する
    */
-  static addComment(
-    knowledgeId: number,
-    comment: string,
-    author: string
-  ): boolean {
+  static addComment(knowledgeId: number, comment: string, author: string): boolean {
     try {
       const sheets = this.getSheets();
       const rowNumber = this.findRowById(sheets.posts, knowledgeId);
@@ -695,13 +645,7 @@ export class KnowledgeService {
       const newId = this.getNextId(sheets.comments);
       const now = new Date();
 
-      sheets.comments.appendRow([
-        newId,
-        knowledgeId,
-        author || '匿名',
-        comment,
-        now,
-      ]);
+      sheets.comments.appendRow([newId, knowledgeId, author || '匿名', comment, now]);
 
       // 更新日時を更新
       sheets.posts.getRange(rowNumber, 8).setValue(now);
@@ -729,7 +673,7 @@ export class KnowledgeService {
       if (clientId) {
         const likeRows = this.getSheetValues(sheets.likes);
         alreadyLiked = likeRows.some(
-          (row) => row[0] === clientId && Number(row[1]) === Number(knowledgeId)
+          row => row[0] === clientId && Number(row[1]) === Number(knowledgeId),
         );
       }
 

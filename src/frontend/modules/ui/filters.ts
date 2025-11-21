@@ -13,7 +13,7 @@ import { renderKnowledgeGrid } from './render';
 
 export function updateCategoryUI() {
   const selectedCategory = getSelectedCategory();
-  document.querySelectorAll('.category-chip').forEach((chip) => {
+  document.querySelectorAll('.category-chip').forEach(chip => {
     const cat = chip.getAttribute('data-category');
     if (cat) {
       chip.classList.toggle('active', cat === selectedCategory);
@@ -29,7 +29,7 @@ export function setCategory(category: string) {
 
 export function updateViewUI() {
   const currentView = getCurrentView();
-  document.querySelectorAll('.nav-item').forEach((item) => {
+  document.querySelectorAll('.nav-item').forEach(item => {
     const view = item.getAttribute('data-view');
     if (view) {
       item.classList.toggle('active', view === currentView);
@@ -67,7 +67,7 @@ export function updateTagFilter(knowledgeList: any[], activeTags: string[]) {
     return;
   }
   const tagsSet = new Set<string>();
-  knowledgeList.forEach((k) => {
+  knowledgeList.forEach(k => {
     if (k && k.tags && Array.isArray(k.tags)) {
       k.tags.forEach((tag: string) => {
         if (tag) {
@@ -83,8 +83,8 @@ export function updateTagFilter(knowledgeList: any[], activeTags: string[]) {
   const activeSet = Array.isArray(activeTags) ? activeTags : [];
   tagsFilter.innerHTML = Array.from(tagsSet)
     .map(
-      (tag) =>
-        `<span class="tag-chip ${activeSet.includes(tag) ? 'active' : ''}" onclick="toggleTag('${tag}')">${tag}</span>`
+      tag =>
+        `<span class="tag-chip ${activeSet.includes(tag) ? 'active' : ''}" onclick="toggleTag('${tag}')">${tag}</span>`,
     )
     .join('');
 }
@@ -112,25 +112,26 @@ export function filterKnowledge() {
   const activeTags = getSelectedTags();
   const category = getSelectedCategory();
   const currentView = getCurrentView();
-  const filteredList = allKnowledge.filter((k) => {
+  const filteredList = allKnowledge.filter(k => {
     const normalizedCategory = k.category || 'article';
     let matchesSearch = true;
     if (searchWord) {
-      matchesSearch =
+      matchesSearch = Boolean(
         (k.title && k.title.toLowerCase().includes(searchWord)) ||
-        (k.comment && k.comment.toLowerCase().includes(searchWord)) ||
-        (k.url && k.url.toLowerCase().includes(searchWord));
+          (k.comment && k.comment.toLowerCase().includes(searchWord)) ||
+          (k.url && k.url.toLowerCase().includes(searchWord)),
+      );
     }
     let matchesTags = true;
     if (activeTags.length > 0) {
-      matchesTags = activeTags.some((tag) => k.tags && k.tags.includes(tag));
+      matchesTags = activeTags.some(tag => k.tags && k.tags.includes(tag));
     }
     const matchesCategory = category === 'all' || normalizedCategory === category;
     const matchesView = currentView === 'all' ? true : isKnowledgeLiked(k.id);
     return matchesSearch && matchesTags && matchesCategory && matchesView;
   });
   renderKnowledgeGrid(filteredList);
-  document.querySelectorAll('.tag-chip').forEach((chip) => {
+  document.querySelectorAll('.tag-chip').forEach(chip => {
     const tag = chip.textContent || '';
     if (tag && activeTags.includes(tag)) {
       chip.classList.add('active');

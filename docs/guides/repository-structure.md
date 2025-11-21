@@ -4,14 +4,14 @@ AI Knowledge Dashboard のリポジトリ構成と、今回のフロントエン
 
 ## Top-Level Layout
 
-| Path | Role |
-| --- | --- |
-| `README.md` | プロジェクト概要とセットアップ手順 |
-| `build.ts` / `bun.lock` / `package.json` | Bun + esbuild ベースのビルド設定 |
-| `dist/` | `bun run build` で生成される GAS 配信用アーティファクト |
-| `docs/` | 設計・仕様・ガイド類のドキュメント群（このファイルもここ） |
-| `src/` | すべてのソースコード（GAS スクリプト + フロントエンド + HTML + スタイル） |
-| `tsconfig.json` | TypeScript コンパイル設定 |
+| Path                                     | Role                                                                      |
+| ---------------------------------------- | ------------------------------------------------------------------------- |
+| `README.md`                              | プロジェクト概要とセットアップ手順                                        |
+| `build.ts` / `bun.lock` / `package.json` | Bun + esbuild ベースのビルド設定                                          |
+| `dist/`                                  | `bun run build` で生成される GAS 配信用アーティファクト                   |
+| `docs/`                                  | 設計・仕様・ガイド類のドキュメント群（このファイルもここ）                |
+| `src/`                                   | すべてのソースコード（GAS スクリプト + フロントエンド + HTML + スタイル） |
+| `tsconfig.json`                          | TypeScript コンパイル設定                                                 |
 
 ```text
 .
@@ -24,26 +24,26 @@ AI Knowledge Dashboard のリポジトリ構成と、今回のフロントエン
 
 ### Docs Folder
 
-| Path | 内容 |
-| --- | --- |
-| `docs/architecture/` | システム構成やデータフロー |
-| `docs/design/` | UI/UX 方針とワイヤー |
-| `docs/guides/` | 執筆ガイドや本ドキュメントなどの運用系情報 |
-| `docs/specs/` | スプレッドシートスキーマなどの仕様書 |
+| Path                 | 内容                                       |
+| -------------------- | ------------------------------------------ |
+| `docs/architecture/` | システム構成やデータフロー                 |
+| `docs/design/`       | UI/UX 方針とワイヤー                       |
+| `docs/guides/`       | 執筆ガイドや本ドキュメントなどの運用系情報 |
+| `docs/specs/`        | スプレッドシートスキーマなどの仕様書       |
 
 ## Source Tree
 
-| Path | Role |
-| --- | --- |
-| `src/Code.ts` | エントリポイント。Google Apps Script で実行されるバックエンド（Web App）定義 |
-| `src/appsscript.json` | GAS プロジェクト設定 |
-| `src/config/` | カテゴリ別必須項目などの設定値 |
-| `src/services/` | `SheetService`/`KnowledgeService` など、スプレッドシート連携ロジック |
-| `src/partials/` | `HtmlService` で読み込む UI パーツ（main/sidebar/modal） |
-| `src/styles/` | ベーススタイル（HTML 文字列で読み込み） |
-| `src/types/` | 共有型定義 |
-| `src/utils/` | バックエンド共通ユーティリティ |
-| `src/frontend/` | TypeScript + ESM で書かれたフロントエンドコード（esbuild で 1 ファイルにバンドル） |
+| Path                  | Role                                                                               |
+| --------------------- | ---------------------------------------------------------------------------------- |
+| `src/Code.ts`         | エントリポイント。Google Apps Script で実行されるバックエンド（Web App）定義       |
+| `src/appsscript.json` | GAS プロジェクト設定                                                               |
+| `src/config/`         | カテゴリ別必須項目などの設定値                                                     |
+| `src/services/`       | `SheetService`/`KnowledgeService` など、スプレッドシート連携ロジック               |
+| `src/partials/`       | `HtmlService` で読み込む UI パーツ（main/sidebar/modal）                           |
+| `src/styles/`         | ベーススタイル（HTML 文字列で読み込み）                                            |
+| `src/types/`          | 共有型定義                                                                         |
+| `src/utils/`          | バックエンド共通ユーティリティ                                                     |
+| `src/frontend/`       | TypeScript + ESM で書かれたフロントエンドコード（esbuild で 1 ファイルにバンドル） |
 
 ### Frontend Modules
 

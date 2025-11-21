@@ -9,7 +9,7 @@ import {
   getAllKnowledge,
   setAllKnowledge,
 } from '../data/state';
-import { postComment, postLike, fetchKnowledgeDetail } from '../data/api';
+import { postComment, postLike } from '../data/api';
 
 const LIKES_BUTTON_PREFIX = 'like-btn-';
 const MODAL_LIKE_BUTTON_PREFIX = 'modal-like-btn-';
@@ -52,7 +52,7 @@ export function displayDetail(knowledge: any) {
   }
 
   const list = getAllKnowledge();
-  const localIndex = list.findIndex((k) => k.id == knowledge.id);
+  const localIndex = list.findIndex(k => k.id == knowledge.id);
   if (localIndex === -1) {
     list.push(knowledge);
   } else {
@@ -150,7 +150,7 @@ export function copyShareLink(id: number) {
   navigator.clipboard
     .writeText(shareUrl)
     .then(() => alert(`共有用URLをクリップボードにコピーしました！\n${shareUrl}`))
-    .catch((err) => {
+    .catch(err => {
       console.error('Failed to copy:', err);
       prompt('以下のURLをコピーしてください:', shareUrl);
     });
@@ -162,7 +162,7 @@ export function submitComment(
     onSuccess: () => void;
     onError: (message: string) => void;
     onUpdate?: () => void;
-  }
+  },
 ) {
   const commentInput = document.getElementById('newComment') as HTMLInputElement | null;
   const authorInput = document.getElementById('commentAuthor') as HTMLInputElement | null;
@@ -194,7 +194,7 @@ export function submitComment(
     knowledgeId,
     commentText,
     author,
-    (success) => {
+    success => {
       if (success) {
         confirmOptimisticCommentInState(knowledgeId, tempId);
         refreshCommentsUI(knowledgeId);
@@ -206,12 +206,12 @@ export function submitComment(
         options.onError('コメントの投稿に失敗しました');
       }
     },
-    (error) => {
+    error => {
       removeOptimisticCommentFromState(knowledgeId, tempId);
       refreshCommentsUI(knowledgeId);
       console.error(error);
       options.onError(error?.message || 'コメントの投稿に失敗しました');
-    }
+    },
   );
 }
 
@@ -222,7 +222,7 @@ export function addLike(
     onSuccess: () => void;
     onError: (message: string) => void;
     onUpdate?: () => void;
-  }
+  },
 ) {
   const knowledge = findKnowledgeById(knowledgeId);
   if (!knowledge) {
@@ -240,7 +240,7 @@ export function addLike(
   postLike(
     knowledgeId,
     clientId,
-    (newLikes) => {
+    newLikes => {
       knowledge.likes = newLikes;
       knowledge.likePending = false;
       markKnowledgeLiked(knowledgeId);
@@ -248,13 +248,13 @@ export function addLike(
       options.onUpdate?.();
       options.onSuccess();
     },
-    (error) => {
+    error => {
       console.error('Error adding like:', error);
       knowledge.likes = originalLikes;
       knowledge.likePending = false;
       updateLikeDisplay(knowledgeId, originalLikes, false);
       options.onUpdate?.();
       options.onError(error?.message || 'いいねの追加に失敗しました');
-    }
+    },
   );
 }

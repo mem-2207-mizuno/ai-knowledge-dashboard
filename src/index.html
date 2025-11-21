@@ -1,36 +1,46 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Knowledge Dashboard</title>
+    <!-- Markdownパーサー -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+    <!-- EasyMDE (Markdown Editor) -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.js"></script>
+    <?!= include('styles_base'); ?>
+  </head>
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Knowledge Dashboard</title>
-  <!-- Markdownパーサー -->
-  <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
-  <!-- EasyMDE (Markdown Editor) -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.css">
-  <script src="https://cdn.jsdelivr.net/npm/easymde@2.18.0/dist/easymde.min.js"></script>
-  <?!= include('styles_base'); ?>
-</head>
+  <body>
+    <!-- サーバーサイドからの初期データをグローバル変数として定義 -->
+    <script type="application/json" id="server-data">
+      <?!= serverData ?>
+    </script>
+    <script>
+      const serverDataElement = document.getElementById('server-data');
+      let parsedServerData = {
+        initialData: [],
+        referenceData: {},
+        initialId: null,
+        appUrl: '',
+      };
+      if (serverDataElement && serverDataElement.textContent) {
+        try {
+          parsedServerData = JSON.parse(serverDataElement.textContent);
+        } catch (error) {
+          console.error('Failed to parse server data', error);
+        }
+      }
+      const SERVER_DATA = parsedServerData;
+      window.SERVER_DATA = SERVER_DATA;
+    </script>
 
-<body>
-  <!-- サーバーサイドからの初期データをグローバル変数として定義 -->
-  <script>
-    const SERVER_DATA = {
-      initialData: <?!= initialData ?>,
-      referenceData: <?!= referenceData ?>,
-      initialId: <?= initialId !== null ? initialId : 'null' ?>,
-      appUrl: "<?!= appUrl ?>"
-    };
-  </script>
+    <div class="layout"><?!= include('partials_sidebar'); ?> <?!= include('partials_main'); ?></div>
 
-  <div class="layout">
-    <?!= include('partials_sidebar'); ?>
-    <?!= include('partials_main'); ?>
-  </div>
-
-  <?!= include('partials_modals'); ?>
-  <?!= include('scripts_bundle'); ?>
-</body>
-
+    <?!= include('partials_modals'); ?> <?!= include('scripts_bundle'); ?>
+  </body>
 </html>

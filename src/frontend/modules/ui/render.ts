@@ -35,7 +35,10 @@ export function renderMarkdown(markdown: string): string {
 
 export function getCategoryInfo(categoryId?: string) {
   const normalized = categoryId || 'article';
-  return CATEGORY_CONFIG.find((cat) => cat.id === normalized) || CATEGORY_CONFIG.find((cat) => cat.id === 'article');
+  return (
+    CATEGORY_CONFIG.find(cat => cat.id === normalized) ||
+    CATEGORY_CONFIG.find(cat => cat.id === 'article')
+  );
 }
 
 export function renderCommentItem(comment: CommentRecord): string {
@@ -64,7 +67,7 @@ export function renderCommentsHtml(comments: CommentRecord[] = []): string {
   if (!comments || comments.length === 0) {
     return '<p>コメントはまだありません</p>';
   }
-  return comments.map((comment) => renderCommentItem(comment)).join('');
+  return comments.map(comment => renderCommentItem(comment)).join('');
 }
 
 export function createKnowledgeCard(knowledge: KnowledgeRecord): string {
@@ -75,12 +78,13 @@ export function createKnowledgeCard(knowledge: KnowledgeRecord): string {
   const categoryInfo = getCategoryInfo(knowledge.category);
   const categoryLabel = categoryInfo ? `${categoryInfo.icon} ${categoryInfo.label}` : 'ナレッジ';
   const statusLabel = (knowledge.status || 'open').toUpperCase();
-  const date = knowledge.postedAt instanceof Date ? knowledge.postedAt : new Date(knowledge.postedAt || Date.now());
+  const date =
+    knowledge.postedAt instanceof Date
+      ? knowledge.postedAt
+      : new Date(knowledge.postedAt || Date.now());
   const dateStr = date.toLocaleDateString('ja-JP');
   const tags = knowledge.tags || [];
-  const tagsHtml = tags
-    .map((tag: string) => `<span class="card-tag">${tag}</span>`)
-    .join('');
+  const tagsHtml = tags.map((tag: string) => `<span class="card-tag">${tag}</span>`).join('');
   const descriptionSource = (knowledge.comment || '')
     .replace(/<[^>]+>/g, '')
     .replace(/\n+/g, ' ')
@@ -131,5 +135,5 @@ export function renderKnowledgeGrid(list: KnowledgeRecord[]): void {
     grid.innerHTML = '<div class="loading">表示できるナレッジが見つかりませんでした</div>';
     return;
   }
-  grid.innerHTML = list.map((k) => createKnowledgeCard(k)).join('');
+  grid.innerHTML = list.map(k => createKnowledgeCard(k)).join('');
 }

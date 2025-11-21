@@ -1,11 +1,7 @@
 /**
  * ナレッジデータの型定義
  */
-export type PostCategory =
-  | 'article'
-  | 'question'
-  | 'recruitment'
-  | 'showcase';
+export type PostCategory = 'article' | 'question' | 'recruitment' | 'showcase';
 
 export interface KnowledgeMetadata {
   [key: string]: any;
@@ -48,13 +44,7 @@ export interface TagRecord {
   aliases: string[];
 }
 
-export type MetadataFieldType =
-  | 'text'
-  | 'textarea'
-  | 'url'
-  | 'date'
-  | 'select'
-  | 'multiselect';
+export type MetadataFieldType = 'text' | 'textarea' | 'url' | 'date' | 'select' | 'multiselect';
 
 export interface CategoryFieldOption {
   label: string;

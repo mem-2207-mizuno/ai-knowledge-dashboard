@@ -11,21 +11,15 @@ import { KnowledgeService } from './services/KnowledgeService';
  * Webアプリケーションとして公開する関数
  * GETリクエストで呼び出される
  */
-function doGet(
-  e: GoogleAppsScript.Events.DoGet
-): GoogleAppsScript.HTML.HtmlOutput {
+function doGet(e: GoogleAppsScript.Events.DoGet): GoogleAppsScript.HTML.HtmlOutput {
   const template = HtmlService.createTemplateFromFile('index');
   template.spreadsheetId = Config.getSpreadsheetId();
 
   // URLパラメータからIDを取得（数値のみを有効とする）
   let initialId: number | null = null;
-  const singleIdParam =
-    e.parameter && typeof e.parameter.id === 'string' ? e.parameter.id : null;
+  const singleIdParam = e.parameter && typeof e.parameter.id === 'string' ? e.parameter.id : null;
   const multiIdParam =
-    e.parameters &&
-    e.parameters.id &&
-    Array.isArray(e.parameters.id) &&
-    e.parameters.id.length > 0
+    e.parameters && e.parameters.id && Array.isArray(e.parameters.id) && e.parameters.id.length > 0
       ? e.parameters.id[0]
       : null;
   const candidateId = singleIdParam || multiIdParam;
@@ -39,26 +33,27 @@ function doGet(
     }
   }
 
-  // nullの場合は 'null' という文字列ではなく null そのものを渡すが、
-  // テンプレートエンジンでの評価エラーを避けるため、テンプレート側での参照は慎重に行う必要がある
-  (template as any).initialId = initialId;
-
   // アプリケーションのURLを取得してテンプレートに渡す
   // JSON.stringifyしない（エスケープ回避）
   // 取得できない場合は空文字をセット
+  let appUrl = '';
   try {
-    (template as any).appUrl = ScriptApp.getService().getUrl();
-  } catch (e) {
-    console.error('Failed to get app URL', e);
-    (template as any).appUrl = '';
+    appUrl = ScriptApp.getService().getUrl();
+  } catch (error) {
+    console.error('Failed to get app URL', error);
   }
 
   // 初期データを取得してテンプレートに渡す（SSR的な挙動）
   // キャッシュが効いているため高速に取得できるはず
   const initialData = KnowledgeService.getList();
-  (template as any).initialData = JSON.stringify(initialData);
   const referenceData = KnowledgeService.getReferenceData();
-  (template as any).referenceData = JSON.stringify(referenceData);
+  const serverData = {
+    initialData,
+    referenceData,
+    initialId,
+    appUrl,
+  };
+  (template as any).serverData = JSON.stringify(serverData).replace(/</g, '\\u003c');
 
   return template
     .evaluate()
@@ -69,10 +64,7 @@ function doGet(
 /**
  * ナレッジ一覧を取得するAPI
  */
-function getKnowledgeList(filters?: {
-  searchWord?: string;
-  tags?: string[];
-}): string {
+function getKnowledgeList(filters?: { searchWord?: string; tags?: string[] }): string {
   // 戻り値をJSON文字列に変更
   const list = KnowledgeService.getList(filters);
   return JSON.stringify(list);
@@ -124,7 +116,7 @@ function updateKnowledge(
     category?: string;
     status?: string;
     metadata?: Record<string, any>;
-  }
+  },
 ): string {
   const result = KnowledgeService.update(knowledgeId, knowledge);
   return JSON.stringify(result);
@@ -133,11 +125,7 @@ function updateKnowledge(
 /**
  * コメントを追加するAPI
  */
-function addComment(
-  knowledgeId: number,
-  comment: string,
-  author: string
-): boolean {
+function addComment(knowledgeId: number, comment: string, author: string): boolean {
   return KnowledgeService.addComment(knowledgeId, comment, author);
 }
 
@@ -159,13 +147,14 @@ function include(filename: string): string {
 }
 
 // グローバルスコープに関数を公開（GASから呼び出せるようにする）
-(global as any).doGet = doGet;
-(global as any).getKnowledgeList = getKnowledgeList;
-(global as any).getKnowledgeDetail = getKnowledgeDetail;
-(global as any).getReferenceData = getReferenceData;
-(global as any).addKnowledge = addKnowledge;
-(global as any).updateKnowledge = updateKnowledge;
-(global as any).addComment = addComment;
-(global as any).addLike = addLike;
-(global as any).testSpreadsheetAccess = testSpreadsheetAccess;
-(global as any).include = include;
+const globalScope = globalThis as Record<string, unknown>;
+globalScope.doGet = doGet;
+globalScope.getKnowledgeList = getKnowledgeList;
+globalScope.getKnowledgeDetail = getKnowledgeDetail;
+globalScope.getReferenceData = getReferenceData;
+globalScope.addKnowledge = addKnowledge;
+globalScope.updateKnowledge = updateKnowledge;
+globalScope.addComment = addComment;
+globalScope.addLike = addLike;
+globalScope.testSpreadsheetAccess = testSpreadsheetAccess;
+globalScope.include = include;

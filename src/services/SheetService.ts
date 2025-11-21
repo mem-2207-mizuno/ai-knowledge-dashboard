@@ -41,7 +41,7 @@ export class SheetService {
   static getOrCreateSheet(
     sheetName: string,
     headers: string[],
-    spreadsheet?: GoogleAppsScript.Spreadsheet.Spreadsheet
+    spreadsheet?: GoogleAppsScript.Spreadsheet.Spreadsheet,
   ): GoogleAppsScript.Spreadsheet.Sheet {
     const book = spreadsheet || this.openSpreadsheet();
     let sheet = book.getSheetByName(sheetName);
@@ -52,10 +52,7 @@ export class SheetService {
 
     // シートの列数が不足している場合は追加
     if (sheet.getMaxColumns() < headers.length) {
-      sheet.insertColumnsAfter(
-        sheet.getMaxColumns(),
-        headers.length - sheet.getMaxColumns()
-      );
+      sheet.insertColumnsAfter(sheet.getMaxColumns(), headers.length - sheet.getMaxColumns());
     }
 
     // ヘッダーを設定（既存と異なる場合も上書きして仕様通りに揃える）

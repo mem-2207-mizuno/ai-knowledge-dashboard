@@ -46,7 +46,7 @@ export function showDetail(id: any, updateHistory = true) {
     }
   }
 
-  const knowledge = getAllKnowledge().find((k) => k.id == normalizedId);
+  const knowledge = getAllKnowledge().find(k => k.id == normalizedId);
   if (knowledge) {
     displayDetailSafe(knowledge, showError);
     return;
@@ -54,7 +54,7 @@ export function showDetail(id: any, updateHistory = true) {
 
   fetchKnowledgeDetail(
     normalizedId,
-    (result) => {
+    result => {
       let detail;
       if (typeof result === 'string') {
         try {
@@ -69,10 +69,10 @@ export function showDetail(id: any, updateHistory = true) {
       }
       displayDetailSafe(detail, showError);
     },
-    (error) => {
+    error => {
       console.error('Failed to fetch detail:', error);
       showError('詳細データの取得に失敗しました。ID: ' + normalizedId);
-    }
+    },
   );
 }
 
@@ -107,7 +107,7 @@ export function submitComment(knowledgeId: number) {
         showError,
       });
     },
-    onError: (message) => showError(message),
+    onError: message => showError(message),
     onUpdate: () => {
       refreshCommentsUI(knowledgeId);
       updateInsights();
@@ -119,7 +119,7 @@ export function addLike(knowledgeId: number) {
   const { showError, clientId } = requireOptions();
   addLikeAction(knowledgeId, clientId, {
     onSuccess: () => updateInsights(),
-    onError: (message) => showError(message),
+    onError: message => showError(message),
     onUpdate: () => {},
   });
 }

@@ -1,4 +1,4 @@
-import type { Knowledge } from '../../types';
+import type { Knowledge } from '../../../types';
 
 declare const google: any;
 
@@ -17,24 +17,30 @@ export function fetchKnowledgeList(onSuccess: SuccessHandler<any>, onFailure: Fa
 export function fetchKnowledgeDetail(
   id: number,
   onSuccess: SuccessHandler<any>,
-  onFailure: FailureHandler
+  onFailure: FailureHandler,
 ) {
-  google.script.run.withSuccessHandler(onSuccess).withFailureHandler(onFailure).getKnowledgeDetail(id);
+  google.script.run
+    .withSuccessHandler(onSuccess)
+    .withFailureHandler(onFailure)
+    .getKnowledgeDetail(id);
 }
 
 export function createKnowledge(
   payload: KnowledgePayload,
   onSuccess: SuccessHandler<any>,
-  onFailure: FailureHandler
+  onFailure: FailureHandler,
 ) {
-  google.script.run.withSuccessHandler(onSuccess).withFailureHandler(onFailure).addKnowledge(payload);
+  google.script.run
+    .withSuccessHandler(onSuccess)
+    .withFailureHandler(onFailure)
+    .addKnowledge(payload);
 }
 
 export function updateKnowledge(
   id: number,
   payload: KnowledgePayload,
   onSuccess: SuccessHandler<any>,
-  onFailure: FailureHandler
+  onFailure: FailureHandler,
 ) {
   google.script.run
     .withSuccessHandler(onSuccess)
@@ -47,7 +53,7 @@ export function postComment(
   comment: string,
   author: string,
   onSuccess: SuccessHandler<boolean>,
-  onFailure: FailureHandler
+  onFailure: FailureHandler,
 ) {
   google.script.run
     .withSuccessHandler(onSuccess)
@@ -59,7 +65,7 @@ export function postLike(
   knowledgeId: number,
   clientId: string,
   onSuccess: SuccessHandler<number>,
-  onFailure: FailureHandler
+  onFailure: FailureHandler,
 ) {
   google.script.run
     .withSuccessHandler(onSuccess)

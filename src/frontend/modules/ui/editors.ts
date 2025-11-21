@@ -43,12 +43,12 @@ function createEditor(textarea: HTMLTextAreaElement) {
     Object.assign({}, EASYMDE_OPTIONS, {
       element: textarea,
       placeholder: 'Markdownで詳細を記述できます',
-    })
+    }),
   );
 }
 
 export function initMarkdownEditors() {
-  (['add', 'edit'] as EditorMode[]).forEach((mode) => {
+  (['add', 'edit'] as EditorMode[]).forEach(mode => {
     const textareaId = mode === 'add' ? 'addComment' : 'editComment';
     const textarea = document.getElementById(textareaId) as HTMLTextAreaElement | null;
     if (textarea && !editors[mode]) {
@@ -66,11 +66,7 @@ export function getMarkdownValue(mode: EditorMode, fallbackTextareaId: string): 
   return textarea ? textarea.value.trim() : '';
 }
 
-export function setMarkdownValue(
-  mode: EditorMode,
-  fallbackTextareaId: string,
-  value: string
-) {
+export function setMarkdownValue(mode: EditorMode, fallbackTextareaId: string, value: string) {
   const resolved = value || '';
   const editor = editors[mode];
   if (editor && typeof editor.value === 'function') {

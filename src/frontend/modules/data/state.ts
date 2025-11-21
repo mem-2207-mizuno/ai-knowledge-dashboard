@@ -1,4 +1,4 @@
-import type { Knowledge, Comment } from '../../types';
+import type { Knowledge, Comment } from '../../../types';
 
 const CLIENT_ID_STORAGE_KEY = 'ai-knowledge-dashboard-client-id';
 const LIKED_STORAGE_KEY = 'ai-knowledge-dashboard-liked-ids';
@@ -32,7 +32,7 @@ function loadLikedKnowledgeIds(): Set<string> {
     }
     const parsed = JSON.parse(stored);
     if (Array.isArray(parsed)) {
-      return new Set(parsed.map((id) => id.toString()));
+      return new Set(parsed.map(id => id.toString()));
     }
   } catch (error) {
     console.warn('Failed to load liked IDs from storage:', error);
@@ -112,7 +112,7 @@ export function getCurrentView(): 'all' | 'favorites' {
 }
 
 export function findKnowledgeById(id: number): Knowledge | undefined {
-  return allKnowledge.find((item) => item.id == id);
+  return allKnowledge.find(item => item.id == id);
 }
 
 export function appendOptimisticComment(knowledgeId: number, comment: Comment) {
@@ -131,7 +131,7 @@ export function removeOptimisticCommentFromState(knowledgeId: number, tempId: st
   if (!knowledge || !Array.isArray(knowledge.comments)) {
     return;
   }
-  knowledge.comments = knowledge.comments.filter((comment) => comment.tempId !== tempId);
+  knowledge.comments = knowledge.comments.filter(comment => comment.tempId !== tempId);
 }
 
 export function confirmOptimisticCommentInState(knowledgeId: number, tempId: string) {
@@ -139,7 +139,7 @@ export function confirmOptimisticCommentInState(knowledgeId: number, tempId: str
   if (!knowledge || !Array.isArray(knowledge.comments)) {
     return;
   }
-  const comment = knowledge.comments.find((c) => c.tempId === tempId);
+  const comment = knowledge.comments.find(c => c.tempId === tempId);
   if (!comment) {
     return;
   }

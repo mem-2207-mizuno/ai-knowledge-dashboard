@@ -1,7 +1,4 @@
-import {
-  initClientState,
-  getClientId,
-} from './modules/data/state';
+import { initClientState, getClientId } from './modules/data/state';
 import {
   openAddModal as openAddModalForm,
   closeAddModal as closeAddModalForm,
@@ -12,7 +9,6 @@ import {
 import {
   setCategory as setCategoryFilter,
   setView as setViewFilter,
-  filterKnowledge as filterKnowledgeCore,
   searchKnowledge as searchKnowledgeCore,
   toggleTag as toggleTagCore,
 } from './modules/ui/filters';
@@ -25,14 +21,10 @@ import {
   submitComment,
   addLike,
 } from './modules/controllers/detailController';
-import {
-  initFormsController,
-  submitUpdate,
-} from './modules/controllers/formsController';
+import { initFormsController, submitUpdate } from './modules/controllers/formsController';
 import { showError } from './modules/system/errors';
 
 declare const SERVER_DATA: any;
-declare const google: any;
 initClientState();
 const CLIENT_ID = getClientId();
 initDetailController({
@@ -47,7 +39,6 @@ initFormsController({
 
 const setCategory = (category: string) => setCategoryFilter(category);
 const setView = (view: 'all' | 'favorites') => setViewFilter(view);
-const filterKnowledge = () => filterKnowledgeCore();
 const searchKnowledge = () => searchKnowledgeCore();
 const toggleTag = (tag: string) => toggleTagCore(tag);
 

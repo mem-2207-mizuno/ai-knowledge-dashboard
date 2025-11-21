@@ -18,10 +18,12 @@ Google Apps Script (GAS) + TypeScript + Google Spreadsheet で構築するナレ
 ## Getting Started
 
 1. **Install & link**
+
    ```bash
    bun install
    bunx clasp login
    ```
+
    `.clasp.json` で対象 GAS プロジェクトに紐付ける。
 
 2. **Configure Spreadsheet**
@@ -38,11 +40,20 @@ Google Apps Script (GAS) + TypeScript + Google Spreadsheet で構築するナレ
 
 ### Useful Scripts
 
-| Command | Description |
-| --- | --- |
-| `bun run build` | esbuild で `dist/` を生成 |
-| `bun run push` | ビルド + `clasp push` |
-| `clasp run migrateLegacyData -p '{"sourceSheetName":"シート1","truncateTarget":true}'` | 旧シートから正規化シートに移行 |
+| Command                                                                                | Description                              |
+| -------------------------------------------------------------------------------------- | ---------------------------------------- |
+| `bun run build`                                                                        | esbuild で `dist/` を生成                |
+| `bun run push`                                                                         | ビルド + `clasp push`                    |
+| `bun run lint`                                                                         | GAS 環境向け ESLint で `src/` をチェック |
+| `bun run lint:fix`                                                                     | 自動修正可能な ESLint エラーを修正       |
+| `bun run format`                                                                       | Prettier でリポジトリ全体を整形          |
+| `bun run format:check`                                                                 | Prettier で差分がないか検証              |
+| `bun run typecheck`                                                                    | TypeScript の型チェック (`tsc --noEmit`) |
+| `clasp run migrateLegacyData -p '{"sourceSheetName":"シート1","truncateTarget":true}'` | 旧シートから正規化シートに移行           |
+
+### Editor Setup
+
+VS Code を利用する場合は `.vscode/settings.json` により保存時に Prettier フォーマットと ESLint の自動修正が走る。別エディタを利用する場合は保存前に `bun run format` / `bun run lint:fix` を実行すれば同等の整形が可能。
 
 ## Documentation
 

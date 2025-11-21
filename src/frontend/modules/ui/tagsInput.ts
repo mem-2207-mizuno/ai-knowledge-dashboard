@@ -9,7 +9,9 @@ const TAG_INPUT_STATE: Record<TagInputMode, string[]> = {
 };
 
 function getTagInputElement(mode: TagInputMode): HTMLInputElement | null {
-  return document.getElementById(mode === 'add' ? 'addTagInput' : 'editTagInput') as HTMLInputElement | null;
+  return document.getElementById(
+    mode === 'add' ? 'addTagInput' : 'editTagInput',
+  ) as HTMLInputElement | null;
 }
 
 function renderTagChips(mode: TagInputMode) {
@@ -25,13 +27,13 @@ function renderTagChips(mode: TagInputMode) {
   }
   container.innerHTML = tags
     .map(
-      (tag) => `
+      tag => `
           <span class="tag-chip tag-chip-editable">
             <span>${escapeHtml(tag)}</span>
             <button type="button" class="tag-chip-remove" data-tag="${escapeHtml(tag)}" aria-label="${escapeHtml(
-        tag
-      )} を削除">&times;</button>
-          </span>`
+              tag,
+            )} を削除">&times;</button>
+          </span>`,
     )
     .join('');
 }
@@ -42,8 +44,10 @@ function setupTagChipRemoval(mode: TagInputMode) {
   if (!container || container.dataset.listenerAttached) {
     return;
   }
-  container.addEventListener('click', (event) => {
-    const button = (event.target as HTMLElement).closest('button[data-tag]') as HTMLButtonElement | null;
+  container.addEventListener('click', event => {
+    const button = (event.target as HTMLElement).closest(
+      'button[data-tag]',
+    ) as HTMLButtonElement | null;
     if (!button) {
       return;
     }
@@ -100,15 +104,19 @@ function hydrateTagSuggestionList() {
   if (!datalist) {
     return;
   }
-  datalist.innerHTML = KNOWN_TAGS.map((tag) => `<option value="${escapeHtml(tag.name)}"></option>`).join('');
+  datalist.innerHTML = KNOWN_TAGS.map(
+    tag => `<option value="${escapeHtml(tag.name)}"></option>`,
+  ).join('');
 }
 
 export function setupTagInputs() {
   hydrateTagSuggestionList();
-  (['add', 'edit'] as TagInputMode[]).forEach((mode) => {
+  (['add', 'edit'] as TagInputMode[]).forEach(mode => {
     const input = getTagInputElement(mode);
     if (input && !input.dataset.listenerAttached) {
-      input.addEventListener('keydown', (event) => handleTagInputKeydown(event as KeyboardEvent, mode));
+      input.addEventListener('keydown', event =>
+        handleTagInputKeydown(event as KeyboardEvent, mode),
+      );
       input.addEventListener('blur', () => commitTagFromInputElement(input, mode));
       input.dataset.listenerAttached = 'true';
     }
@@ -127,10 +135,10 @@ export function setTags(mode: TagInputMode, tags: string[] | string) {
   const normalized = Array.isArray(tags)
     ? tags
     : typeof tags === 'string'
-      ? tags.split(',').map((tag) => tag.trim())
+      ? tags.split(',').map(tag => tag.trim())
       : [];
   TAG_INPUT_STATE[mode] = normalized
-    .map((tag) => tag.trim())
+    .map(tag => tag.trim())
     .filter((tag, index, arr) => tag && arr.indexOf(tag) === index);
   renderTagChips(mode);
   const input = getTagInputElement(mode);

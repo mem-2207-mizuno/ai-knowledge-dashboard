@@ -7,10 +7,12 @@ Google Apps Script (GAS) で作られたWebアプリは、通常1つのURLしか
 ## 1. 概要：やりたいことと解決策
 
 ### やりたいこと
+
 通常、GASのアプリにアクセスすると、常に「トップページ（一覧）」が表示されます。
 しかし、**「この記事面白いよ！」とチャットで共有したいとき、クリック一発でその記事が開いた状態で表示されてほしい** ですよね。
 
 ### 解決策： 「しおり」を挟んで渡す
+
 この仕組みは、本に「しおり」を挟んで友達に渡すのと似ています。
 
 1.  **しおりを挟む**: 記事を開いたとき、URLの末尾に `?id=123` という「しおり（パラメータ）」をこっそり付けます。
@@ -38,23 +40,24 @@ sequenceDiagram
 
     GAS->>GAS: パラメータ id=123 を取得
     GAS->>Template: id=123 を変数として埋め込む
-    
+
     GAS-->>Browser: HTMLを返す
-    
+
     Browser->>Browser: HTML解析 & JS実行
     Browser->>Browser: 埋め込まれた id=123 を確認
-    
+
     alt IDがある場合
         Browser->>Browser: 一覧データを描画
         Browser->>Browser: 該当IDの詳細モーダルを自動で開く
     else IDがない場合
         Browser->>Browser: 一覧データのみ描画
     end
-    
+
     Browser-->>User: 画面表示完了
 ```
 
 ### 重要なポイント
+
 1.  **サーバー側での受け取り**: GASの `doGet(e)` 関数は、URLパラメータを `e.parameter` として受け取ることができます。
 2.  **HTMLへの埋め込み**: 受け取ったIDを、HTML生成時にJavaScriptの変数として埋め込みます（`const SERVER_DATA = { initialId: 123, ... }`）。
 3.  **クライアント側での制御**: ページ読み込み完了時 (`window.onload`) にこの変数をチェックし、値があればモーダルを開く関数を実行します。
@@ -76,19 +79,22 @@ function doGet(e: GoogleAppsScript.Events.DoGet): GoogleAppsScript.HTML.HtmlOutp
   // 1. URLパラメータからIDを取得
   // 例: .../exec?id=5 なら "5" が取れるので数値に変換
   const id = e.parameter.id ? parseInt(e.parameter.id) : null;
-  
-  // 2. テンプレート変数にセット
-  // nullの場合でも安全に扱えるように渡す
-  (template as any).initialId = id;
 
-  // アプリ自体のURLも取得して渡す（共有リンク作成用）
-  try {
-    (template as any).appUrl = ScriptApp.getService().getUrl();
-  } catch (e) {
-    (template as any).appUrl = '';
-  }
+  const appUrl = (() => {
+    try {
+      return ScriptApp.getService().getUrl();
+    } catch (error) {
+      return '';
+    }
+  })();
 
-  // ... (その他の初期データ取得) ...
+  const payload = {
+    initialId: id,
+    appUrl,
+    initialData: KnowledgeService.getList(),
+    referenceData: KnowledgeService.getReferenceData(),
+  };
+  (template as any).serverData = JSON.stringify(payload);
 
   return template.evaluate(); // HTMLを生成
 }
@@ -101,20 +107,25 @@ GASのテンプレート構文（スクリプトレット）を使って、HTML�
 
 ```html:src/index.html
 <body>
-  <!-- サーバーサイドからの変数をグローバル変数として定義 -->
-  <script>
-    const SERVER_DATA = {
-      // データそのもの (JSON)
-      initialData: <?!= initialData ?>,
-      // ID (数値またはnull)
-      // テンプレート評価時にnullが文字列にならないよう三項演算子で制御
-      initialId: <?= initialId !== null ? initialId : 'null' ?>,
-      // アプリURL (文字列)
-      appUrl: "<?!= appUrl ?>"
-    };
+  <!-- JSON を埋め込む専用タグにサーバーデータを入れる -->
+  <script type="application/json" id="server-data">
+    <?!= serverData ?>
   </script>
-  
-  <!-- ... コンコンテンツ ... -->
+  <script>
+    const serverDataElement = document.getElementById('server-data');
+    let parsedServerData = { initialData: [], referenceData: {}, initialId: null, appUrl: '' };
+    if (serverDataElement?.textContent) {
+      try {
+        parsedServerData = JSON.parse(serverDataElement.textContent);
+      } catch (error) {
+        console.error('Failed to parse server data', error);
+      }
+    }
+    const SERVER_DATA = parsedServerData;
+    window.SERVER_DATA = SERVER_DATA;
+  </script>
+
+  <!-- ... コンテンツ ... -->
 </body>
 ```
 
@@ -126,7 +137,7 @@ GASのテンプレート構文（スクリプトレット）を使って、HTML�
 window.onload = function () {
   // 1. サーバーから渡されたIDを取得
   let initialId = SERVER_DATA.initialId;
-  
+
   // (補足) サーバー渡しがない場合、URLパラメータから直接取るフォールバック処理も実装
   if (initialId === null) {
      const urlParams = new URLSearchParams(window.location.search);
@@ -153,11 +164,10 @@ window.onload = function () {
 
 ユーザーが画面上で操作したときもURL（内部的な履歴）を更新します。これにより「ブラウザの戻るボタン」が機能します。
 
-*   **モーダルを開く時**: `history.pushState({id: 123}, '', '?id=123')` を実行。
-*   **共有リンクコピー時**: `SERVER_DATA.appUrl` + `?id=123` の文字列を生成してクリップボードにコピー。
+- **モーダルを開く時**: `history.pushState({id: 123}, '', '?id=123')` を実行。
+- **共有リンクコピー時**: `SERVER_DATA.appUrl` + `?id=123` の文字列を生成してクリップボードにコピー。
 
 ## まとめ
 
 この実装により、**「SPAのような快適な操作性」** と **「特定の情報を共有できる利便性」** を両立しています。
 GASの制約（iframe内動作、サーバーサイドの特殊性）を回避するための工夫（`setTimeout`、テンプレート変数の渡し方など）が重要なポイントです。
-

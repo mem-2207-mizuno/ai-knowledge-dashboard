@@ -4,7 +4,7 @@ AI Knowledge Dashboard の全体構成を俯瞰する。詳細なシート仕様
 
 ## 1. Runtime Flow
 
-````mermaid
+```mermaid
 sequenceDiagram
     participant User
     participant Browser as Browser (SPA)
@@ -25,7 +25,7 @@ sequenceDiagram
     Sheets-->>GAS: Success
     GAS-->>Browser: Result (JSON)
     Browser->>Browser: Refresh local cache if needed
-`````
+```
 
 ## 2. Module Responsibilities
 

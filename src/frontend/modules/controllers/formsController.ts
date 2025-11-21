@@ -35,6 +35,6 @@ export function submitUpdate(event: Event) {
       });
       alert('ナレッジを更新しました！');
     },
-    onError: (message) => showError(message),
+    onError: message => showError(message),
   });
 }

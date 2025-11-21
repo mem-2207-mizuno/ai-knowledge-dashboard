@@ -1,10 +1,6 @@
 import { fetchKnowledgeList } from './api';
 import { normalizeKnowledgeId } from '../system/utils';
-import {
-  setAllKnowledge,
-  getAllKnowledge,
-  getSelectedTags,
-} from './state';
+import { setAllKnowledge, getAllKnowledge, getSelectedTags } from './state';
 import {
   updateCategoryUI,
   updateViewUI,
@@ -13,6 +9,7 @@ import {
   filterKnowledge,
 } from '../ui/filters';
 import { renderKnowledgeGrid } from '../ui/render';
+import type { Comment } from '../../../types';
 
 type LoadCallbacks = {
   showDetail: (id: number, updateHistory?: boolean) => void;
@@ -37,14 +34,14 @@ export function displayKnowledge(knowledgeList: any[]) {
     return;
   }
 
-  const normalizedList = knowledgeList.map((k) => ({
+  const normalizedList = knowledgeList.map(k => ({
     ...k,
     category: k.category || 'article',
     status: k.status || 'open',
     likePending: false,
     postedAt: k.postedAt ? new Date(k.postedAt) : new Date(),
     comments: Array.isArray(k.comments)
-      ? k.comments.map((comment) => ({
+      ? k.comments.map((comment: Comment) => ({
           ...comment,
           postedAt: comment.postedAt ? new Date(comment.postedAt) : new Date(),
         }))
@@ -73,7 +70,7 @@ export function displayKnowledge(knowledgeList: any[]) {
 export function loadKnowledge(openId: number | null, callbacks: LoadCallbacks) {
   console.log('Loading knowledge list...');
   fetchKnowledgeList(
-    (result) => {
+    result => {
       let knowledgeList;
       if (typeof result === 'string') {
         try {
@@ -102,9 +99,9 @@ export function loadKnowledge(openId: number | null, callbacks: LoadCallbacks) {
         callbacks.showDetail(normalizedOpenId, false);
       }
     },
-    (error) => {
+    error => {
       console.error('Failure handler called with error:', error);
       callbacks.showError(error);
-    }
+    },
   );
 }

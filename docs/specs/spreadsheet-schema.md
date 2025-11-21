@@ -7,6 +7,7 @@
 - 既存の 1 シート運用（`シート1`）から段階的に移行しやすいよう、**正規化しつつも GAS から扱いやすい粒度**を意識しています。
 
 ### 1.1 想定済みのユースケース
+
 - `?page=...` / `?id=...` といった Deep Linking による画面遷移。
 - カテゴリ（記事/質問/仲間募集/成果物）ごとに異なる入力項目・表示。
 - Markdown ベースの本文、タグ検索、お気に入りフィルタ。
@@ -16,7 +17,7 @@
 
 ## 2. 全体構成
 
-````mermaid
+```mermaid
 erDiagram
     Posts ||--o{ Comments : "postId"
     Posts ||--o{ PostTags : "postId"
@@ -65,7 +66,7 @@ erDiagram
       number postId FK
       datetime likedAt
     }
-````
+```
 
 - **Posts** を中心に、タグ・コメント・いいねを各シートに分離。
 - タグ候補は Tags シートで集中管理し、`PostTags` で中間テーブルを再現。
@@ -77,63 +78,63 @@ erDiagram
 
 ### 3.1 `Posts` シート（メイン）
 
-| 列 | ヘッダー | 型 / 例 | 説明 |
-| --- | --- | --- | --- |
-| A | `id` | 数値 / `101` | 投稿の一意 ID。既存データ移行時は連番を維持。 |
-| B | `category` | 文字列 / `article` | `article`, `question`, `recruitment`, `showcase` のいずれか。 |
-| C | `title` | 文字列 | タイトル。 |
-| D | `content` | Markdown | 詳細本文。 |
-| E | `tagsCache` | JSON 配列 or カンマ区切り | 表示高速化用にタグ名を保持。正規情報は `PostTags`。 |
-| F | `postedBy` | 文字列 | 投稿者名。 |
-| G | `postedAt` | 日時 | 投稿日。 |
-| H | `updatedAt` | 日時 | 最終更新日時。 |
-| I | `likesCount` | 数値 | いいね数キャッシュ。`Likes` から集計するが、一覧描画高速化のために冗長保持。 |
-| J | `thumbnailUrl` | URL | サムネイル。 |
-| K | `status` | 文字列 / `open`, `closed`, `resolved` etc. | カテゴリ共通 or 特有の状態。 |
-| L | `metadataJson` | JSON | カテゴリ固有項目。例： `{"summary":"...", "questionDeadline":"2024-02-01"}` |
+| 列  | ヘッダー       | 型 / 例                                    | 説明                                                                         |
+| --- | -------------- | ------------------------------------------ | ---------------------------------------------------------------------------- |
+| A   | `id`           | 数値 / `101`                               | 投稿の一意 ID。既存データ移行時は連番を維持。                                |
+| B   | `category`     | 文字列 / `article`                         | `article`, `question`, `recruitment`, `showcase` のいずれか。                |
+| C   | `title`        | 文字列                                     | タイトル。                                                                   |
+| D   | `content`      | Markdown                                   | 詳細本文。                                                                   |
+| E   | `tagsCache`    | JSON 配列 or カンマ区切り                  | 表示高速化用にタグ名を保持。正規情報は `PostTags`。                          |
+| F   | `postedBy`     | 文字列                                     | 投稿者名。                                                                   |
+| G   | `postedAt`     | 日時                                       | 投稿日。                                                                     |
+| H   | `updatedAt`    | 日時                                       | 最終更新日時。                                                               |
+| I   | `likesCount`   | 数値                                       | いいね数キャッシュ。`Likes` から集計するが、一覧描画高速化のために冗長保持。 |
+| J   | `thumbnailUrl` | URL                                        | サムネイル。                                                                 |
+| K   | `status`       | 文字列 / `open`, `closed`, `resolved` etc. | カテゴリ共通 or 特有の状態。                                                 |
+| L   | `metadataJson` | JSON                                       | カテゴリ固有項目。例： `{"summary":"...", "questionDeadline":"2024-02-01"}`  |
 
 > 備考: `metadataJson` は各カテゴリに必要なフィールドを柔軟に追加できる。GAS 側で `JSON.parse` してフォームや表示に反映する。
 
 ### 3.2 `Tags` シート（マスター）
 
-| 列 | ヘッダー | 例 | 説明 |
-| --- | --- | --- | --- |
-| A | `id` | `10` | タグ ID（連番）。 |
-| B | `name` | `GAS` | 表示名。 |
-| C | `slug` | `gas` | URL/検索用に半角小文字へ正規化。 |
-| D | `color` | `#667eea` | 表示用カラー。任意。 |
-| E | `aliases` | `Apps Script, GAS` | カンマ区切りまたは JSON 配列。タグ入力時のサジェストに利用。 |
-| F | `createdAt` | 2024/01/01 | 作成日時。 |
+| 列  | ヘッダー    | 例                 | 説明                                                         |
+| --- | ----------- | ------------------ | ------------------------------------------------------------ |
+| A   | `id`        | `10`               | タグ ID（連番）。                                            |
+| B   | `name`      | `GAS`              | 表示名。                                                     |
+| C   | `slug`      | `gas`              | URL/検索用に半角小文字へ正規化。                             |
+| D   | `color`     | `#667eea`          | 表示用カラー。任意。                                         |
+| E   | `aliases`   | `Apps Script, GAS` | カンマ区切りまたは JSON 配列。タグ入力時のサジェストに利用。 |
+| F   | `createdAt` | 2024/01/01         | 作成日時。                                                   |
 
 ### 3.3 `PostTags` シート（中間）
 
-| 列 | ヘッダー | 説明 |
-| --- | --- | --- |
-| A | `postId` | `Posts.id` への FK。 |
-| B | `tagId` | `Tags.id` への FK。 |
-| C | `createdAt` | 紐づけ日時（任意）。 |
+| 列  | ヘッダー    | 説明                 |
+| --- | ----------- | -------------------- |
+| A   | `postId`    | `Posts.id` への FK。 |
+| B   | `tagId`     | `Tags.id` への FK。  |
+| C   | `createdAt` | 紐づけ日時（任意）。 |
 
 フロントの入力では、タグ名 -> `Tags` レコードを検索または新規追加し、`PostTags` を更新する流れになる。
 
 ### 3.4 `Comments` シート
 
-| 列 | ヘッダー | 例 | 説明 |
-| --- | --- | --- | --- |
-| A | `id` | `5001` | コメント ID（連番）。 |
-| B | `postId` | `101` | 紐づく投稿 ID。 |
-| C | `author` | `Taro` | コメント投稿者。 |
-| D | `content` | Markdown | コメント本文。 |
-| E | `postedAt` | 日時 | 投稿日。 |
+| 列  | ヘッダー   | 例       | 説明                  |
+| --- | ---------- | -------- | --------------------- |
+| A   | `id`       | `5001`   | コメント ID（連番）。 |
+| B   | `postId`   | `101`    | 紐づく投稿 ID。       |
+| C   | `author`   | `Taro`   | コメント投稿者。      |
+| D   | `content`  | Markdown | コメント本文。        |
+| E   | `postedAt` | 日時     | 投稿日。              |
 
 > 既存の JSON 形式コメント履歴から移行する際は、`KnowledgeService.parseComments` の処理を流用し、それぞれのコメントを 1 行に展開する。
 
 ### 3.5 `Likes` シート
 
-| 列 | ヘッダー | 例 | 説明 |
-| --- | --- | --- | --- |
-| A | `clientId` | `7f3c2d...` | ブラウザごとに生成した識別子。 |
-| B | `postId` | `101` | 紐づく投稿 ID。 |
-| C | `likedAt` | 日時 | いいね日時。 |
+| 列  | ヘッダー   | 例          | 説明                           |
+| --- | ---------- | ----------- | ------------------------------ |
+| A   | `clientId` | `7f3c2d...` | ブラウザごとに生成した識別子。 |
+| B   | `postId`   | `101`       | 紐づく投稿 ID。                |
+| C   | `likedAt`  | 日時        | いいね日時。                   |
 
 - クライアントは LocalStorage に `clientId`（UUID）を保持し、いいね時に送信。
 - サーバーは `Likes` シートで `(clientId, postId)` 重複をチェックし、未存在なら挿入＋`Posts.likesCount` をインクリメント。
@@ -142,7 +143,7 @@ erDiagram
 
 ## 4. データフローと責務
 
-````mermaid
+```mermaid
 flowchart LR
     subgraph Client
       UI[SPA UI]
@@ -171,7 +172,7 @@ flowchart LR
     UI -- submitComment --> Code --> CommentsSheet
     UI -- addLike + clientId --> Code --> LikesSheet --> PostsSheet
     UI -- editTags --> Code --> TagsSheet & PostTagsSheet
-````
+```
 
 - **読み込み**: `KnowledgeService.getList` は `Posts` を基点に、`PostTags` と `Tags` を join してタグ配列を構築。初期ロード時は SSR 的に `initialData` へ埋め込み。
 - **書き込み**: 投稿追加・更新時に `Posts` と `PostTags` をまとめて更新。カテゴリ固有値は `metadataJson` へシリアライズ。

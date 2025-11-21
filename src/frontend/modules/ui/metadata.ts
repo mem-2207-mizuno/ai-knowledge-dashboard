@@ -1,4 +1,4 @@
-import type { CategoryMetadataField } from '../../types';
+import type { CategoryMetadataField } from '../../../types';
 import {
   CATEGORY_FORM_CONFIGS,
   DEFAULT_CATEGORY_VALUE,
@@ -17,7 +17,7 @@ function populateCategorySelect(selectId: string) {
     selectEl.innerHTML = '';
     return;
   }
-  selectEl.innerHTML = FORM_CATEGORY_OPTIONS.map((config) => {
+  selectEl.innerHTML = FORM_CATEGORY_OPTIONS.map(config => {
     const label = `${config.icon ? `${config.icon} ` : ''}${config.label}`;
     return `<option value="${config.key}">${label}</option>`;
   }).join('');
@@ -26,7 +26,7 @@ function populateCategorySelect(selectId: string) {
 function createMetadataFieldMarkup(
   field: CategoryMetadataField,
   value: unknown,
-  mode: MetadataMode
+  mode: MetadataMode,
 ): string {
   const containerId = `${mode}-meta-${field.key}`;
   const requiredAttr = field.required ? 'required' : '';
@@ -46,11 +46,11 @@ function createMetadataFieldMarkup(
   let inputHtml = '';
   if (field.type === 'textarea') {
     inputHtml = `<textarea id="${containerId}" data-metadata-key="${field.key}" ${requiredAttr} ${placeholderAttr}>${escapeHtml(
-      resolvedValue
+      resolvedValue,
     )}</textarea>`;
   } else if (field.type === 'select') {
     const options =
-      field.options?.map((option) => {
+      field.options?.map(option => {
         const selected = resolvedValue && option.value === resolvedValue ? 'selected' : '';
         return `<option value="${option.value}" ${selected}>${option.label}</option>`;
       }) || [];
@@ -65,7 +65,7 @@ function createMetadataFieldMarkup(
       inputType = 'date';
     }
     inputHtml = `<input type="${inputType}" id="${containerId}" data-metadata-key="${field.key}" value="${escapeHtml(
-      resolvedValue
+      resolvedValue,
     )}" ${requiredAttr} ${placeholderAttr} />`;
   }
 
@@ -88,14 +88,16 @@ export function renderMetadataFields(mode: MetadataMode, metadata: Record<string
   if (!container) {
     return;
   }
-  const selectEl = document.getElementById(mode === 'add' ? 'addCategory' : 'editCategory') as HTMLSelectElement | null;
+  const selectEl = document.getElementById(
+    mode === 'add' ? 'addCategory' : 'editCategory',
+  ) as HTMLSelectElement | null;
   if (!selectEl) {
     container.innerHTML = '';
     if (separator) separator.style.display = 'none';
     return;
   }
   const categoryKey = selectEl.value;
-  const config = CATEGORY_FORM_CONFIGS.find((cat) => cat.key === categoryKey);
+  const config = CATEGORY_FORM_CONFIGS.find(cat => cat.key === categoryKey);
   if (!config || !config.metadataFields || config.metadataFields.length === 0) {
     container.innerHTML = '';
     if (separator) separator.style.display = 'none';
@@ -103,7 +105,7 @@ export function renderMetadataFields(mode: MetadataMode, metadata: Record<string
   }
   if (separator) separator.style.display = 'block';
   container.innerHTML = config.metadataFields
-    .map((field) => createMetadataFieldMarkup(field, metadata[field.key], mode))
+    .map(field => createMetadataFieldMarkup(field, metadata[field.key], mode))
     .join('');
 }
 
@@ -115,7 +117,7 @@ export function collectMetadata(mode: MetadataMode): Record<string, any> {
   }
   const metadataInputs = container.querySelectorAll('[data-metadata-key]');
   const result: Record<string, any> = {};
-  metadataInputs.forEach((input) => {
+  metadataInputs.forEach(input => {
     const key = input.getAttribute('data-metadata-key');
     if (!key) {
       return;
@@ -125,8 +127,8 @@ export function collectMetadata(mode: MetadataMode): Record<string, any> {
       const selectEl = input as HTMLSelectElement;
       if (selectEl.multiple) {
         value = Array.from(selectEl.options)
-          .filter((option) => option.selected)
-          .map((option) => option.value);
+          .filter(option => option.selected)
+          .map(option => option.value);
       } else {
         value = selectEl.value.trim();
       }
