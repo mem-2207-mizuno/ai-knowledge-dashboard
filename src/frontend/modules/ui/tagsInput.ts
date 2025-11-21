@@ -1,4 +1,4 @@
-import { KNOWN_TAGS } from './constants';
+import { KNOWN_TAGS } from '../data/constants';
 import { escapeHtml } from './dom';
 
 type TagInputMode = 'add' | 'edit';

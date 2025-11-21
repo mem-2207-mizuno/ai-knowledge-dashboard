@@ -51,5 +51,6 @@ Google Apps Script (GAS) + TypeScript + Google Spreadsheet で構築するナレ
 - [UI Layout Overview](docs/design/ui-layout.md) – Notion ライクな2カラムUIの構成
 - [System Overview](docs/architecture/system-overview.md) – ランタイム構成とデータフロー
 - [Documentation Guidelines](docs/guides/documentation-guidelines.md) – ドキュメント作成時のルール
+- [Repository Structure](docs/guides/repository-structure.md) – ディレクトリ構成と責務の整理
 
 各ドキュメントは README から辿れるようリンクを張り、詳細なコード記述は避ける（The truth is in the code）。

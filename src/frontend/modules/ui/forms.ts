@@ -1,4 +1,4 @@
-import { DEFAULT_CATEGORY_VALUE } from './constants';
+import { DEFAULT_CATEGORY_VALUE } from '../data/constants';
 import {
   initMarkdownEditors,
   getMarkdownValue,
@@ -7,7 +7,7 @@ import {
 } from './editors';
 import { commitPendingTagInput, getTags, setTags } from './tagsInput';
 import { collectMetadata, renderMetadataFields } from './metadata';
-import { createKnowledge, updateKnowledge, fetchKnowledgeDetail } from './api';
+import { createKnowledge, updateKnowledge, fetchKnowledgeDetail } from '../data/api';
 
 export function setupForms() {
   initMarkdownEditors();

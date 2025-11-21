@@ -1,5 +1,5 @@
-import { CATEGORY_CONFIG } from './constants';
-import { isKnowledgeLiked } from './state';
+import { CATEGORY_CONFIG } from '../data/constants';
+import { isKnowledgeLiked } from '../data/state';
 
 declare const marked: any;
 

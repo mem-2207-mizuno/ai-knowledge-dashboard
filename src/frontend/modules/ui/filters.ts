@@ -8,7 +8,7 @@ import {
   getAllKnowledge,
   getLikedKnowledgeIds,
   isKnowledgeLiked,
-} from './state';
+} from '../data/state';
 import { renderKnowledgeGrid } from './render';
 
 export function updateCategoryUI() {

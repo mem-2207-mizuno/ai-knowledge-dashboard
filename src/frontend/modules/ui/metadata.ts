@@ -3,7 +3,7 @@ import {
   CATEGORY_FORM_CONFIGS,
   DEFAULT_CATEGORY_VALUE,
   FORM_CATEGORY_OPTIONS,
-} from './constants';
+} from '../data/constants';
 import { escapeHtml } from './dom';
 
 type MetadataMode = 'add' | 'edit';

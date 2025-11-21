@@ -8,8 +8,8 @@ import {
   markKnowledgeLiked,
   getAllKnowledge,
   setAllKnowledge,
-} from './state';
-import { postComment, postLike, fetchKnowledgeDetail } from './api';
+} from '../data/state';
+import { postComment, postLike, fetchKnowledgeDetail } from '../data/api';
 
 const LIKES_BUTTON_PREFIX = 'like-btn-';
 const MODAL_LIKE_BUTTON_PREFIX = 'modal-like-btn-';
