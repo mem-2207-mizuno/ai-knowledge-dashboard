@@ -97,9 +97,8 @@ export function createKnowledgeCard(knowledge: KnowledgeRecord): string {
       : '（説明なし）';
 
   const liked = knowledge.id ? isKnowledgeLiked(knowledge.id) : false;
-  const likeButtonClass = `like-button ${liked ? 'liked' : ''}`;
-  const likeButtonText = liked ? `❤️ 済 ${knowledge.likes || 0}` : `❤️ ${knowledge.likes || 0}`;
-  const likeButtonDisabled = liked ? 'disabled' : '';
+  const likeButtonClass = `icon-button favorite-button ${liked ? 'active' : ''}`;
+  const likeButtonText = `<span class="material-icons">${liked ? 'star' : 'star_border'}</span>`;
 
   const coverHtml = knowledge.thumbnailUrl
     ? `<div class="card-cover" style="background-image:url('${knowledge.thumbnailUrl}')"></div>`
@@ -118,7 +117,7 @@ export function createKnowledgeCard(knowledge: KnowledgeRecord): string {
           <div class="card-meta">
             <span>${knowledge.postedBy || '不明'}・${dateStr}</span>
             <button id="like-btn-${knowledge.id}" class="${likeButtonClass}" data-knowledge-id="${knowledge.id}"
-              onclick="event.stopPropagation(); addLike(${knowledge.id || 0})" ${likeButtonDisabled}>
+              onclick="event.stopPropagation(); addLike(${knowledge.id || 0})">
               ${likeButtonText}
             </button>
           </div>

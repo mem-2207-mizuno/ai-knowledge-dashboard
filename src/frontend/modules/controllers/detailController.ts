@@ -6,6 +6,8 @@ import {
   copyShareLink as copyShareLinkUtil,
   submitComment as submitCommentAction,
   addLike as addLikeAction,
+  deleteComment as deleteCommentAction,
+  handleCommentKeydown as handleCommentKeydownUi,
   refreshCommentsUI,
 } from '../ui/detail';
 import { normalizeKnowledgeId } from '../system/utils';
@@ -13,7 +15,6 @@ import { loadKnowledge } from '../data/knowledgeList';
 import { updateInsights } from '../ui/filters';
 
 type DetailControllerOptions = {
-  clientId: string;
   showError: (error: any) => void;
 };
 
@@ -116,10 +117,20 @@ export function submitComment(knowledgeId: number) {
 }
 
 export function addLike(knowledgeId: number) {
-  const { showError, clientId } = requireOptions();
-  addLikeAction(knowledgeId, clientId, {
+  const { showError } = requireOptions();
+  addLikeAction(knowledgeId, {
     onSuccess: () => updateInsights(),
     onError: message => showError(message),
     onUpdate: () => {},
   });
 }
+
+export function deleteComment(knowledgeId: number, commentId: number) {
+  const { showError } = requireOptions();
+  deleteCommentAction(knowledgeId, commentId, {
+    onSuccess: () => updateInsights(),
+    onError: message => showError(message),
+  });
+}
+
+export const handleCommentKeydown = handleCommentKeydownUi;

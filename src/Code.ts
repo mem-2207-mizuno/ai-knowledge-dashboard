@@ -129,6 +129,10 @@ function addComment(knowledgeId: number, comment: string, author: string): boole
   return KnowledgeService.addComment(knowledgeId, comment, author);
 }
 
+function deleteComment(commentId: number, knowledgeId: number): boolean {
+  return KnowledgeService.deleteComment(commentId, knowledgeId);
+}
+
 /**
  * いいねを追加するAPI
  */
@@ -155,6 +159,7 @@ globalScope.getReferenceData = getReferenceData;
 globalScope.addKnowledge = addKnowledge;
 globalScope.updateKnowledge = updateKnowledge;
 globalScope.addComment = addComment;
+globalScope.deleteComment = deleteComment;
 globalScope.addLike = addLike;
 globalScope.testSpreadsheetAccess = testSpreadsheetAccess;
 globalScope.include = include;

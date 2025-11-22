@@ -40,7 +40,7 @@ flowchart LR
 
 ## 4. Next Enhancements
 
-- EasyMDE などの Markdown エディタ導入（フォーム限定）。
+- BlockNote によるブロックエディタ（フォームで編集、詳細も同一表現で表示）。
 - タグオートコンプリート UI、カテゴリ固有項目に応じたフォーム切替。
 - Insight Cards を可変化してカテゴリ別メトリクスやトレンドカードを追加。
 

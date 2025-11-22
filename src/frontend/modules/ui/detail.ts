@@ -1,15 +1,16 @@
-import { renderMarkdown, renderCommentsHtml, getCategoryInfo } from './render';
+import { renderMarkdown, getCategoryInfo } from './render';
 import {
   findKnowledgeById,
   appendOptimisticComment,
   removeOptimisticCommentFromState,
   confirmOptimisticCommentInState,
   isKnowledgeLiked,
-  markKnowledgeLiked,
+  toggleKnowledgeLiked,
+  removeCommentById,
   getAllKnowledge,
   setAllKnowledge,
 } from '../data/state';
-import { postComment, postLike } from '../data/api';
+import { postComment, deleteComment as deleteCommentApi } from '../data/api';
 import { renderReadonlyMarkdown } from './editors';
 import { CATEGORY_FORM_CONFIGS } from '../data/constants';
 
@@ -54,6 +55,40 @@ function renderMetadataSection(knowledge: any): string {
   `;
 }
 
+function renderComments(comments: any[] = [], knowledgeId: number): string {
+  if (!comments || comments.length === 0) {
+    return '<p class="comment-empty">コメントはまだありません</p>';
+  }
+  return comments
+    .map(comment => {
+      const date = comment.postedAt
+        ? typeof comment.postedAt === 'string'
+          ? new Date(comment.postedAt)
+          : new Date(comment.postedAt)
+        : new Date();
+      const canDelete = !!comment.id;
+      return `
+        <div class="comment-card" ${comment.pending ? 'data-pending="true"' : ''}>
+          <div class="comment-card-header">
+            <div>
+              <div class="comment-author">${comment.author || '匿名'}</div>
+              <div class="comment-date">${date.toLocaleString('ja-JP')}</div>
+            </div>
+            ${
+              canDelete
+                ? `<button class="icon-button comment-delete" onclick="deleteComment(${knowledgeId}, ${
+                    comment.id
+                  })" title="削除"><span class="material-icons">delete</span></button>`
+                : ''
+            }
+          </div>
+          <div class="comment-card-body">${renderMarkdown(comment.text || '')}</div>
+        </div>
+      `;
+    })
+    .join('');
+}
+
 export function refreshCommentsUI(knowledgeId: number) {
   const knowledge = findKnowledgeById(knowledgeId);
   if (!knowledge) {
@@ -64,24 +99,24 @@ export function refreshCommentsUI(knowledgeId: number) {
     return;
   }
   const comments = Array.isArray(knowledge.comments) ? knowledge.comments : [];
-  commentsList.innerHTML = renderCommentsHtml(comments);
+  commentsList.innerHTML = renderComments(comments, knowledgeId);
 }
 
 export function updateLikeDisplay(knowledgeId: number, likes: number, pending = false) {
   const liked = isKnowledgeLiked(knowledgeId);
   const cardBtn = document.getElementById(`${LIKES_BUTTON_PREFIX}${knowledgeId}`);
   if (cardBtn) {
-    cardBtn.textContent = liked ? `❤️ 済 ${likes}` : `❤️ ${likes}`;
-    cardBtn.classList.toggle('liked', liked);
-    (cardBtn as HTMLButtonElement).disabled = liked || pending;
+    cardBtn.innerHTML = `<span class="material-icons">${liked ? 'star' : 'star_border'}</span>`;
+    cardBtn.classList.toggle('active', liked);
+    (cardBtn as HTMLButtonElement).disabled = pending;
     (cardBtn as HTMLButtonElement).style.opacity = pending ? '0.6' : '1';
   }
 
   const modalBtn = document.getElementById(`${MODAL_LIKE_BUTTON_PREFIX}${knowledgeId}`);
   if (modalBtn) {
-    modalBtn.textContent = liked ? `❤️ いいね済 ${likes}` : `❤️ いいね ${likes}`;
-    modalBtn.classList.toggle('liked', liked);
-    (modalBtn as HTMLButtonElement).disabled = liked || pending;
+    modalBtn.innerHTML = `<span class="material-icons">${liked ? 'star' : 'star_border'}</span>`;
+    modalBtn.classList.toggle('active', liked);
+    (modalBtn as HTMLButtonElement).disabled = pending;
     (modalBtn as HTMLButtonElement).style.opacity = pending ? '0.6' : '1';
   }
 }
@@ -142,9 +177,8 @@ export function displayDetail(knowledge: any) {
     : 'URLは登録されていません';
 
   const commentsArray = Array.isArray(knowledge.comments) ? knowledge.comments : [];
-  const commentsHtml = renderCommentsHtml(commentsArray);
+  const commentsHtml = renderComments(commentsArray, knowledge.id);
   const isLiked = knowledge.id ? isKnowledgeLiked(knowledge.id) : false;
-  const likesCount = knowledge.likes || 0;
   const modalLikeClass = `icon-button ${isLiked ? 'active' : ''}`;
   const knowledgeUrl = knowledge.url || '';
   const urlMarkup = knowledgeUrl
@@ -178,13 +212,27 @@ export function displayDetail(knowledge: any) {
         ${metadataHtml}
         <p><strong>説明:</strong></p>
         <div id="knowledgeDetailBody" class="blocknote-shell readonly"></div>
-        <div style="margin: 20px 0;">
-          <h3>コメント</h3>
-          <div id="commentsList">${commentsHtml}</div>
-          <div style="margin-top: 20px;">
-            <input type="text" id="newComment" placeholder="コメントを入力..." style="width: 70%; padding: 10px; border: 2px solid #ddd; border-radius: 5px;">
-            <input type="text" id="commentAuthor" placeholder="お名前" style="width: 20%; padding: 10px; border: 2px solid #ddd; border-radius: 5px; margin-left: 10px;">
-            <button onclick="submitComment(${knowledge.id})" style="padding: 10px 20px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; margin-left: 10px;">投稿</button>
+        <div class="comment-section">
+          <div class="comment-section-header">
+            <h3>コメント</h3>
+          </div>
+          <div id="commentsList" class="comment-list">${commentsHtml}</div>
+          <div class="comment-form">
+            <label class="comment-field">
+              <span class="comment-label">本文</span>
+              <textarea id="newComment" placeholder="コメントを入力（改行可）" rows="4" onkeydown="handleCommentKeydown(event, ${knowledge.id})"></textarea>
+            </label>
+            <div class="comment-form-footer">
+              <label class="comment-field small">
+                <span class="comment-label">お名前</span>
+                <input type="text" id="commentAuthor" placeholder="匿名" />
+              </label>
+              <div class="comment-form-actions">
+                <button class="secondary-button" onclick="closeModal()">閉じる</button>
+                <button class="primary-button" onclick="submitComment(${knowledge.id})">投稿</button>
+              </div>
+            </div>
+            <div class="comment-hint">Enterで改行 / Cmd+Enterで投稿</div>
           </div>
         </div>
       `;
@@ -289,9 +337,47 @@ export function submitComment(
   );
 }
 
+export function deleteComment(
+  knowledgeId: number,
+  commentId: number,
+  options: {
+    onSuccess?: () => void;
+    onError?: (message: string) => void;
+  } = {},
+) {
+  const onSuccess = options.onSuccess || (() => {});
+  const onError = options.onError || (() => {});
+  deleteCommentApi(
+    commentId,
+    knowledgeId,
+    success => {
+      if (success) {
+        removeCommentById(knowledgeId, commentId);
+        refreshCommentsUI(knowledgeId);
+        onSuccess();
+      } else {
+        onError('コメントの削除に失敗しました');
+      }
+    },
+    error => {
+      console.error(error);
+      onError(error?.message || 'コメントの削除に失敗しました');
+    },
+  );
+}
+
+export function handleCommentKeydown(event: KeyboardEvent, knowledgeId: number) {
+  if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') {
+    event.preventDefault();
+    const globalScope = window as any;
+    if (typeof globalScope.submitComment === 'function') {
+      globalScope.submitComment(knowledgeId);
+    }
+  }
+}
+
 export function addLike(
   knowledgeId: number,
-  clientId: string,
   options: {
     onSuccess: () => void;
     onError: (message: string) => void;
@@ -303,32 +389,9 @@ export function addLike(
     options.onError('ナレッジが見つかりませんでした');
     return;
   }
-  if (isKnowledgeLiked(knowledgeId) || knowledge.likePending) {
-    return;
-  }
-  const originalLikes = knowledge.likes || 0;
-  knowledge.likePending = true;
-  knowledge.likes = originalLikes + 1;
-  updateLikeDisplay(knowledgeId, knowledge.likes, true);
-
-  postLike(
-    knowledgeId,
-    clientId,
-    newLikes => {
-      knowledge.likes = newLikes;
-      knowledge.likePending = false;
-      markKnowledgeLiked(knowledgeId);
-      updateLikeDisplay(knowledgeId, newLikes, false);
-      options.onUpdate?.();
-      options.onSuccess();
-    },
-    error => {
-      console.error('Error adding like:', error);
-      knowledge.likes = originalLikes;
-      knowledge.likePending = false;
-      updateLikeDisplay(knowledgeId, originalLikes, false);
-      options.onUpdate?.();
-      options.onError(error?.message || 'いいねの追加に失敗しました');
-    },
-  );
+  const liked = toggleKnowledgeLiked(knowledgeId);
+  knowledge.likePending = false;
+  updateLikeDisplay(knowledgeId, knowledge.likes || 0, false);
+  options.onUpdate?.();
+  options.onSuccess();
 }

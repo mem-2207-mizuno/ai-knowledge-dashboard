@@ -659,6 +659,33 @@ export class KnowledgeService {
   }
 
   /**
+   * コメントを削除する
+   */
+  static deleteComment(commentId: number, knowledgeId: number): boolean {
+    try {
+      const sheets = this.getSheets();
+      const commentRow = this.findRowById(sheets.comments, commentId);
+      if (!commentRow) {
+        return false;
+      }
+
+      sheets.comments.deleteRow(commentRow);
+
+      // 更新日時を更新
+      const postRow = this.findRowById(sheets.posts, knowledgeId);
+      if (postRow) {
+        sheets.posts.getRange(postRow, 8).setValue(new Date());
+      }
+
+      this.clearCache();
+      return true;
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      return false;
+    }
+  }
+
+  /**
    * いいねを追加する
    */
   static addLike(knowledgeId: number, clientId?: string): number {

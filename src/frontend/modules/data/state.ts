@@ -79,6 +79,28 @@ export function markKnowledgeLiked(id: number) {
   saveLikedKnowledgeIds();
 }
 
+export function unmarkKnowledgeLiked(id: number) {
+  if (!id) {
+    return;
+  }
+  likedKnowledgeIds.delete(id.toString());
+  saveLikedKnowledgeIds();
+}
+
+export function toggleKnowledgeLiked(id: number): boolean {
+  if (!id) {
+    return false;
+  }
+  if (likedKnowledgeIds.has(id.toString())) {
+    likedKnowledgeIds.delete(id.toString());
+    saveLikedKnowledgeIds();
+    return false;
+  }
+  likedKnowledgeIds.add(id.toString());
+  saveLikedKnowledgeIds();
+  return true;
+}
+
 export function setAllKnowledge(list: Knowledge[]) {
   allKnowledge = list;
 }
@@ -132,6 +154,14 @@ export function removeOptimisticCommentFromState(knowledgeId: number, tempId: st
     return;
   }
   knowledge.comments = knowledge.comments.filter(comment => comment.tempId !== tempId);
+}
+
+export function removeCommentById(knowledgeId: number, commentId: number) {
+  const knowledge = findKnowledgeById(knowledgeId);
+  if (!knowledge || !Array.isArray(knowledge.comments)) {
+    return;
+  }
+  knowledge.comments = knowledge.comments.filter(comment => comment.id !== commentId);
 }
 
 export function confirmOptimisticCommentInState(knowledgeId: number, tempId: string) {

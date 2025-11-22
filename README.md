@@ -6,7 +6,9 @@ Google Apps Script (GAS) + TypeScript + Google Spreadsheet で構築するナレ
 
 - SSR 初期データ + `History API` による Deep Linking（`?id=xxx` でモーダルを直接開く）
 - Posts / Tags / PostTags / Comments / Likes シートへ正規化したデータモデル
-- コメント & いいねの楽観的 UI、LocalStorage による clientId / いいね済み状態管理
+- BlockNote ベースのブロックエディタ（新規・編集・詳細の読み取りも同一表現）
+- コメントの楽観的 UI と削除対応、Cmd/Ctrl+Enter 投稿
+- お気に入りは星アイコンのトグル（ローカル保持）でシンプルに切り替え
 - `MigrationService` による旧シートからの一括移行
 
 ## Tech Stack

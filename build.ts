@@ -15,6 +15,7 @@ function getKnowledgeDetail(id) { return global.getKnowledgeDetail(id); }
 function addKnowledge(knowledge) { return global.addKnowledge(knowledge); }
 function updateKnowledge(id, knowledge) { return global.updateKnowledge(id, knowledge); }
 function addComment(id, comment, author) { return global.addComment(id, comment, author); }
+function deleteComment(id, knowledgeId) { return global.deleteComment(id, knowledgeId); }
 function addLike(id) { return global.addLike(id); }
 function testSpreadsheetAccess() { return global.testSpreadsheetAccess(); }
 `;

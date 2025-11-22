@@ -61,6 +61,18 @@ export function postComment(
     .addComment(knowledgeId, comment, author);
 }
 
+export function deleteComment(
+  commentId: number,
+  knowledgeId: number,
+  onSuccess: SuccessHandler<boolean>,
+  onFailure: FailureHandler,
+) {
+  google.script.run
+    .withSuccessHandler(onSuccess)
+    .withFailureHandler(onFailure)
+    .deleteComment(commentId, knowledgeId);
+}
+
 export function postLike(
   knowledgeId: number,
   clientId: string,

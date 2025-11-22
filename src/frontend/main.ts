@@ -1,4 +1,4 @@
-import { initClientState, getClientId } from './modules/data/state';
+import { initClientState } from './modules/data/state';
 import {
   openAddModal as openAddModalForm,
   closeAddModal as closeAddModalForm,
@@ -20,6 +20,8 @@ import {
   copyShareLink,
   submitComment,
   addLike,
+  deleteComment,
+  handleCommentKeydown,
 } from './modules/controllers/detailController';
 import { initFormsController, submitUpdate } from './modules/controllers/formsController';
 import { showError } from './modules/system/errors';
@@ -28,9 +30,7 @@ import '@blocknote/mantine/style.css';
 
 declare const SERVER_DATA: any;
 initClientState();
-const CLIENT_ID = getClientId();
 initDetailController({
-  clientId: CLIENT_ID,
   showError,
 });
 initFormsController({
@@ -69,6 +69,8 @@ Object.assign(globalScope, {
   showDetail,
   addLike,
   submitComment,
+  deleteComment,
+  handleCommentKeydown,
   copyShareLink,
   openEditModal: openEditModalForm,
   closeEditModal: closeEditModalForm,
