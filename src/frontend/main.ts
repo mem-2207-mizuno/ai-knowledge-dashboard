@@ -25,6 +25,7 @@ import {
 } from './modules/controllers/detailController';
 import { initFormsController, submitUpdate } from './modules/controllers/formsController';
 import { showError } from './modules/system/errors';
+import { showNotification } from './modules/system/notifications';
 import '@blocknote/core/style.css';
 import '@blocknote/mantine/style.css';
 
@@ -75,4 +76,5 @@ Object.assign(globalScope, {
   openEditModal: openEditModalForm,
   closeEditModal: closeEditModalForm,
   submitUpdate,
+  showNotification,
 });

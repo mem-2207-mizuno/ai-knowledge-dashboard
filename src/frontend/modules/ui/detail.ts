@@ -13,6 +13,7 @@ import {
 import { postComment, deleteComment as deleteCommentApi } from '../data/api';
 import { renderReadonlyMarkdown } from './editors';
 import { CATEGORY_FORM_CONFIGS } from '../data/constants';
+import { showNotification } from '../system/notifications';
 
 const LIKES_BUTTON_PREFIX = 'like-btn-';
 const MODAL_LIKE_BUTTON_PREFIX = 'modal-like-btn-';
@@ -266,16 +267,58 @@ export function closeDetailModal() {
   modal?.classList.remove('active');
 }
 
+function fallbackCopyText(text: string): boolean {
+  try {
+    const helper = document.createElement('textarea');
+    helper.value = text;
+    helper.setAttribute('readonly', '');
+    helper.style.position = 'absolute';
+    helper.style.left = '-9999px';
+    document.body.appendChild(helper);
+    helper.select();
+    const success = document.execCommand('copy');
+    document.body.removeChild(helper);
+    return success;
+  } catch (error) {
+    console.error('Fallback clipboard copy failed:', error);
+    return false;
+  }
+}
+
 export function copyShareLink(id: number) {
   const baseUrl = (window as any).SERVER_DATA?.appUrl || window.location.href.split('?')[0];
   const shareUrl = `${baseUrl}?id=${id}`;
-  navigator.clipboard
-    .writeText(shareUrl)
-    .then(() => alert(`共有用URLをクリップボードにコピーしました！\n${shareUrl}`))
-    .catch(err => {
-      console.error('Failed to copy:', err);
-      prompt('以下のURLをコピーしてください:', shareUrl);
+  const onSuccess = () => showNotification('共有用URLをコピーしました', { type: 'success' });
+  const onFailure = (err: any) => {
+    console.error('Failed to copy share URL. URL:', shareUrl, err);
+    showNotification('コピーに失敗しました。URLを直接コピーしてください。', {
+      type: 'error',
+      duration: 5000,
     });
+  };
+
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard
+      .writeText(shareUrl)
+      .then(onSuccess)
+      .catch(err => {
+        console.warn('Clipboard API copy failed, trying fallback:', err);
+        const success = fallbackCopyText(shareUrl);
+        if (success) {
+          onSuccess();
+          return;
+        }
+        onFailure(err);
+      });
+    return;
+  }
+
+  const fallbackSucceeded = fallbackCopyText(shareUrl);
+  if (fallbackSucceeded) {
+    onSuccess();
+  } else {
+    onFailure(new Error('Clipboard API is not available'));
+  }
 }
 
 export function submitComment(

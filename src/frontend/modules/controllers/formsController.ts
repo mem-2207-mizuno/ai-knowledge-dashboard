@@ -3,6 +3,7 @@ import {
   closeEditModal as closeEditModalForm,
 } from '../ui/forms';
 import { loadKnowledge } from '../data/knowledgeList';
+import { showNotification } from '../system/notifications';
 
 type FormControllerOptions = {
   closeDetailModal: () => void;
@@ -33,7 +34,7 @@ export function submitUpdate(event: Event) {
         showDetail,
         showError,
       });
-      alert('ナレッジを更新しました！');
+      showNotification('ナレッジを更新しました', { type: 'success' });
     },
     onError: message => showError(message),
   });
