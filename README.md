@@ -62,6 +62,7 @@ VS Code を利用する場合は `.vscode/settings.json` により保存時に P
 - [Dashboard Plan](docs/design/dashboard-plan.md) – UI/UX 方針と優先順位
 - [Spreadsheet Schema](docs/specs/spreadsheet-schema.md) – シート設計と移行手順
 - [UI Layout Overview](docs/design/ui-layout.md) – Notion ライクな2カラムUIの構成
+- [Feedback & Notifications](docs/design/ui-layout.md#feedback--notifications) – 通知コンポーネントの目的と使い方
 - [System Overview](docs/architecture/system-overview.md) – ランタイム構成とデータフロー
 - [Documentation Guidelines](docs/guides/documentation-guidelines.md) – ドキュメント作成時のルール
 - [Repository Structure](docs/guides/repository-structure.md) – ディレクトリ構成と責務の整理
