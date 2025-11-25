@@ -199,6 +199,7 @@
     display: flex;
     flex-direction: column;
     gap: 24px;
+    position: relative;
   }
 
   .main-header {
@@ -249,6 +250,67 @@
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     gap: 20px;
+  }
+
+  .knowledge-grid-section {
+    width: 100%;
+    transition: opacity 0.2s ease;
+  }
+
+  .main-content.panel-active .main-header,
+  .main-content.panel-active .insight-cards,
+  .main-content.panel-active .knowledge-grid-section {
+    display: none;
+  }
+
+  .main-content.panel-active {
+    gap: 0;
+    padding-top: 24px;
+  }
+
+  .detail-panel {
+    display: none;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 18px;
+    box-shadow: 0 10px 30px rgba(15, 15, 15, 0.04);
+    width: 100%;
+  }
+
+  .detail-panel.active {
+    display: block;
+  }
+
+  .detail-panel-placeholder {
+    color: var(--muted);
+    font-size: 14px;
+  }
+
+  .detail-panel-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .detail-panel-title-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .detail-panel-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .detail-panel-content {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
   }
 
   .knowledge-card {

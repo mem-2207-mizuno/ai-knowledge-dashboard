@@ -8,7 +8,7 @@ import { displayKnowledge, loadKnowledge } from '../data/knowledgeList';
 interface BootstrapOptions {
   initialData: any;
   initialId: any;
-  showDetail: (id: number, updateHistory?: boolean) => void;
+  showDetail: (id: number, options?: boolean | { updateHistory?: boolean; mode?: 'modal' | 'panel' }) => void;
   showError: (error: any) => void;
   closeDetail: () => void;
   closeAdd: () => void;
@@ -42,24 +42,39 @@ export function bootstrapApp(options: BootstrapOptions) {
 
   const normalizedInitialId = normalizeKnowledgeId(options.initialId);
   const initialData = options.initialData;
+  const viewParam = new URL(window.location.href).searchParams.get('view');
+  const initialViewMode: 'modal' | 'panel' = viewParam === 'panel' ? 'panel' : 'modal';
+  const triggerInitialOpen = (id: number, mode: 'modal' | 'panel') => {
+    // 二段階で遅延呼び出しして、GAS配信時の初期レンダリング遅延にも耐える
+    setTimeout(() => options.showDetail(id, { updateHistory: false, mode }), 100);
+    setTimeout(() => options.showDetail(id, { updateHistory: false, mode }), 400);
+  };
 
   if (initialData) {
     try {
       displayKnowledge(initialData);
       if (normalizedInitialId !== null) {
-        setTimeout(() => options.showDetail(normalizedInitialId, false), 100);
+        triggerInitialOpen(normalizedInitialId, initialViewMode);
       }
     } catch (error) {
       console.error('Failed to process initial data:', error);
-      loadKnowledge(normalizedInitialId, {
-        showDetail: options.showDetail,
-        showError: options.showError,
-      });
+      loadKnowledge(
+        normalizedInitialId,
+        {
+          showDetail: options.showDetail,
+          showError: options.showError,
+        },
+        { mode: initialViewMode },
+      );
     }
   } else {
-    loadKnowledge(normalizedInitialId, {
-      showDetail: options.showDetail,
-      showError: options.showError,
-    });
+    loadKnowledge(
+      normalizedInitialId,
+      {
+        showDetail: options.showDetail,
+        showError: options.showError,
+      },
+      { mode: initialViewMode },
+    );
   }
 }

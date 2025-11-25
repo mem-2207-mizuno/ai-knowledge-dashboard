@@ -22,6 +22,8 @@ import {
   addLike,
   deleteComment,
   handleCommentKeydown,
+  closeDetailPanel,
+  openDetailPanel,
 } from './modules/controllers/detailController';
 import { initFormsController, submitUpdate } from './modules/controllers/formsController';
 import { showError } from './modules/system/errors';
@@ -73,8 +75,10 @@ Object.assign(globalScope, {
   deleteComment,
   handleCommentKeydown,
   copyShareLink,
+  openDetailPanel,
   openEditModal: openEditModalForm,
   closeEditModal: closeEditModalForm,
   submitUpdate,
   showNotification,
+  closeDetailPanel,
 });

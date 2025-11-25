@@ -17,6 +17,39 @@ import { showNotification } from '../system/notifications';
 
 const LIKES_BUTTON_PREFIX = 'like-btn-';
 const MODAL_LIKE_BUTTON_PREFIX = 'modal-like-btn-';
+const PANEL_LIKE_BUTTON_PREFIX = 'panel-like-btn-';
+type DetailMode = 'modal' | 'panel';
+let currentDetailMode: DetailMode = 'modal';
+
+function clearModalContent() {
+  const modalBody = document.getElementById('modalBody');
+  const modalTitle = document.getElementById('modalTitle');
+  const modalActions = document.getElementById('modalActions');
+  if (modalBody) {
+    modalBody.innerHTML = '';
+  }
+  if (modalTitle) {
+    modalTitle.textContent = '';
+  }
+  if (modalActions) {
+    modalActions.innerHTML = '';
+  }
+}
+
+function resetPanel() {
+  const panel = document.getElementById('detailPanel');
+  const panelContent = document.getElementById('detailPanelContent');
+  const placeholder = document.getElementById('detailPanelPlaceholder');
+  const mainContent = document.querySelector('.main-content');
+  if (panelContent) {
+    panelContent.innerHTML = '';
+  }
+  if (placeholder) {
+    placeholder.style.display = 'block';
+  }
+  panel?.classList.remove('active');
+  mainContent?.classList.remove('panel-active');
+}
 
 function renderMetadataSection(knowledge: any): string {
   const categoryKey = knowledge?.category;
@@ -120,44 +153,17 @@ export function updateLikeDisplay(knowledgeId: number, likes: number, pending = 
     (modalBtn as HTMLButtonElement).disabled = pending;
     (modalBtn as HTMLButtonElement).style.opacity = pending ? '0.6' : '1';
   }
+
+  const panelBtn = document.getElementById(`${PANEL_LIKE_BUTTON_PREFIX}${knowledgeId}`);
+  if (panelBtn) {
+    panelBtn.innerHTML = `<span class="material-icons">${liked ? 'star' : 'star_border'}</span>`;
+    panelBtn.classList.toggle('active', liked);
+    (panelBtn as HTMLButtonElement).disabled = pending;
+    (panelBtn as HTMLButtonElement).style.opacity = pending ? '0.6' : '1';
+  }
 }
 
-export function displayDetail(knowledge: any) {
-  if (!knowledge || knowledge === null) {
-    throw new Error('ナレッジが見つかりませんでした');
-  }
-
-  const list = getAllKnowledge();
-  const localIndex = list.findIndex(k => k.id == knowledge.id);
-  if (localIndex === -1) {
-    list.push(knowledge);
-  } else {
-    list[localIndex] = knowledge;
-  }
-  setAllKnowledge(list);
-
-  const modal = document.getElementById('detailModal');
-  const modalTitle = document.getElementById('modalTitle');
-  const modalBody = document.getElementById('modalBody');
-  let modalActions = document.getElementById('modalActions');
-  if (!modal || !modalTitle || !modalBody) {
-    throw new Error('モーダルを描画できませんでした');
-  }
-  if (!modalActions) {
-    const header = modal.querySelector('.modal-header');
-    if (!header) {
-      throw new Error('モーダルを描画できませんでした');
-    }
-    const actionsWrapper = document.createElement('div');
-    actionsWrapper.className = 'modal-actions';
-    modalActions = document.createElement('div');
-    modalActions.id = 'modalActions';
-    actionsWrapper.appendChild(modalActions);
-    header.appendChild(actionsWrapper);
-  }
-
-  modalTitle.textContent = knowledge.title;
-
+function renderDetailBodyHtml(knowledge: any, mode: DetailMode): string {
   const date = knowledge.postedAt
     ? typeof knowledge.postedAt === 'string'
       ? new Date(knowledge.postedAt)
@@ -179,14 +185,10 @@ export function displayDetail(knowledge: any) {
 
   const commentsArray = Array.isArray(knowledge.comments) ? knowledge.comments : [];
   const commentsHtml = renderComments(commentsArray, knowledge.id);
-  const isLiked = knowledge.id ? isKnowledgeLiked(knowledge.id) : false;
-  const modalLikeClass = `icon-button ${isLiked ? 'active' : ''}`;
-  const knowledgeUrl = knowledge.url || '';
-  const urlMarkup = knowledgeUrl
-    ? `<a href="${knowledgeUrl}" target="_blank">${knowledgeUrl}</a>`
-    : 'URLは登録されていません';
 
-  modalBody.innerHTML = `
+  const closeHandler = mode === 'panel' ? 'closeDetailPanel()' : 'closeModal()';
+
+  return `
         <div style="display:flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px;">
           <span class="category-badge">${categoryLabel}</span>
           <span class="status-pill">${statusLabel}</span>
@@ -229,7 +231,7 @@ export function displayDetail(knowledge: any) {
                 <input type="text" id="commentAuthor" placeholder="匿名" />
               </label>
               <div class="comment-form-actions">
-                <button class="secondary-button" onclick="closeModal()">閉じる</button>
+                <button class="secondary-button" onclick="${closeHandler}">閉じる</button>
                 <button class="primary-button" onclick="submitComment(${knowledge.id})">投稿</button>
               </div>
             </div>
@@ -237,34 +239,141 @@ export function displayDetail(knowledge: any) {
           </div>
         </div>
       `;
+}
 
-  modal.classList.add('active');
-  updateLikeDisplay(knowledge.id, knowledge.likes, knowledge.likePending);
-  renderReadonlyMarkdown('knowledgeDetailBody', knowledge.comment || '（説明なし）');
+function renderActionButtons(knowledge: any, mode: DetailMode) {
+  const isLiked = knowledge.id ? isKnowledgeLiked(knowledge.id) : false;
+  const likePrefix = mode === 'panel' ? PANEL_LIKE_BUTTON_PREFIX : MODAL_LIKE_BUTTON_PREFIX;
+  const likeClass = `icon-button ${isLiked ? 'active' : ''}`;
+  const expandButton =
+    mode === 'modal'
+      ? `<button class="icon-button" onclick="openDetailPanel(${knowledge.id})" title="全体表示">
+          <span class="material-icons">open_in_full</span>
+        </button>`
+      : `<button class="icon-button" onclick="showDetail(${knowledge.id}, { mode: 'modal' })" title="モーダルで開く">
+          <span class="material-icons">open_in_new</span>
+        </button>`;
 
-  modalActions.innerHTML = `
+  return `
     <div class="icon-button-group">
-      <button id="modal-like-btn-${knowledge.id}" class="${modalLikeClass}" onclick="addLike(${knowledge.id})" title="お気に入り">
+      <button id="${likePrefix}${knowledge.id}" class="${likeClass}" onclick="addLike(${knowledge.id})" title="お気に入り">
         <span class="material-icons">${isLiked ? 'star' : 'star_border'}</span>
       </button>
-      <button class="icon-button" onclick="copyShareLink(${knowledge.id})" title="リンクをコピー">
+      <button class="icon-button" onclick="copyShareLink(${knowledge.id}, '${mode}')" title="リンクをコピー">
         <span class="material-icons">link</span>
       </button>
       <button class="icon-button" onclick="openEditModal(${knowledge.id})" title="編集">
         <span class="material-icons">edit</span>
       </button>
+      ${expandButton}
     </div>
   `;
+}
+
+export function displayDetail(knowledge: any, mode: DetailMode = 'modal') {
+  if (!knowledge || knowledge === null) {
+    throw new Error('ナレッジが見つかりませんでした');
+  }
+
+  const list = getAllKnowledge();
+  const localIndex = list.findIndex(k => k.id == knowledge.id);
+  if (localIndex === -1) {
+    list.push(knowledge);
+  } else {
+    list[localIndex] = knowledge;
+  }
+  setAllKnowledge(list);
+
+  currentDetailMode = mode;
+  const bodyHtml = renderDetailBodyHtml(knowledge, mode);
+  const actionsHtml = renderActionButtons(knowledge, mode);
+
+  if (mode === 'modal') {
+    resetPanel();
+    const modal = document.getElementById('detailModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    let modalActions = document.getElementById('modalActions');
+    if (!modal || !modalTitle || !modalBody) {
+      throw new Error('モーダルを描画できませんでした');
+    }
+    if (!modalActions) {
+      const header = modal.querySelector('.modal-header');
+      if (!header) {
+        throw new Error('モーダルを描画できませんでした');
+      }
+      const actionsWrapper = document.createElement('div');
+      actionsWrapper.className = 'modal-actions';
+      modalActions = document.createElement('div');
+      modalActions.id = 'modalActions';
+      actionsWrapper.appendChild(modalActions);
+      header.appendChild(actionsWrapper);
+    }
+
+    modalTitle.textContent = knowledge.title;
+    modalBody.innerHTML = bodyHtml;
+    modal.classList.add('active');
+    modalActions.innerHTML = actionsHtml;
+  } else {
+    clearModalContent();
+    const modal = document.getElementById('detailModal');
+    const panel = document.getElementById('detailPanel');
+    const panelContent = document.getElementById('detailPanelContent');
+    const placeholder = document.getElementById('detailPanelPlaceholder');
+    const mainContent = document.querySelector('.main-content');
+    if (!panel || !panelContent || !placeholder || !mainContent) {
+      throw new Error('詳細パネルを描画できませんでした');
+    }
+    modal?.classList.remove('active');
+    placeholder.style.display = 'none';
+    panelContent.innerHTML = `
+      <div class="detail-panel-header">
+        <div class="detail-panel-title-group">
+          <h2>${knowledge.title || 'ナレッジ詳細'}</h2>
+          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <span class="category-badge">${getCategoryInfo(knowledge.category)?.label || 'ナレッジ'}</span>
+            <span class="status-pill">${(knowledge.status || 'open').toUpperCase()}</span>
+          </div>
+        </div>
+        <div class="detail-panel-actions">
+          <button class="icon-button" onclick="closeDetailPanel()" title="閉じる">
+            <span class="material-icons">close</span>
+          </button>
+          ${actionsHtml}
+        </div>
+      </div>
+      <div class="detail-panel-content">${bodyHtml}</div>
+    `;
+    panel.classList.add('active');
+    mainContent.classList.add('panel-active');
+  }
+
+  updateLikeDisplay(knowledge.id, knowledge.likes, knowledge.likePending);
+  renderReadonlyMarkdown('knowledgeDetailBody', knowledge.comment || '（説明なし）');
 }
 
 export function closeDetailModal() {
   const url = new URL(window.location.href);
   if (url.searchParams.has('id')) {
     url.searchParams.delete('id');
+    url.searchParams.delete('view');
     window.history.pushState({ id: null }, '', url.pathname + url.search);
   }
   const modal = document.getElementById('detailModal');
   modal?.classList.remove('active');
+  clearModalContent();
+  currentDetailMode = 'modal';
+}
+
+export function closeDetailPanel() {
+  const url = new URL(window.location.href);
+  if (url.searchParams.has('id')) {
+    url.searchParams.delete('id');
+    url.searchParams.delete('view');
+    window.history.pushState({ id: null }, '', url.pathname + url.search);
+  }
+  resetPanel();
+  currentDetailMode = 'panel';
 }
 
 function fallbackCopyText(text: string): boolean {
@@ -285,9 +394,17 @@ function fallbackCopyText(text: string): boolean {
   }
 }
 
-export function copyShareLink(id: number) {
+export function copyShareLink(id: number, mode?: DetailMode) {
   const baseUrl = (window as any).SERVER_DATA?.appUrl || window.location.href.split('?')[0];
-  const shareUrl = `${baseUrl}?id=${id}`;
+  const shareMode = mode || currentDetailMode || 'modal';
+  const urlObj = new URL(baseUrl);
+  urlObj.searchParams.set('id', String(id));
+  if (shareMode === 'panel') {
+    urlObj.searchParams.set('view', 'panel');
+  } else {
+    urlObj.searchParams.delete('view');
+  }
+  const shareUrl = urlObj.toString();
   const onSuccess = () => showNotification('共有用URLをコピーしました', { type: 'success' });
   const onFailure = (err: any) => {
     console.error('Failed to copy share URL. URL:', shareUrl, err);

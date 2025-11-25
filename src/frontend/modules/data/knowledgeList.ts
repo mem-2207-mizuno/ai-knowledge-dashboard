@@ -12,8 +12,15 @@ import { renderKnowledgeGrid } from '../ui/render';
 import type { Comment } from '../../../types';
 
 type LoadCallbacks = {
-  showDetail: (id: number, updateHistory?: boolean) => void;
+  showDetail: (
+    id: number,
+    options?: boolean | { updateHistory?: boolean; mode?: 'modal' | 'panel' },
+  ) => void;
   showError: (error: any) => void;
+};
+
+type LoadOptions = {
+  mode?: 'modal' | 'panel';
 };
 
 export function displayKnowledge(knowledgeList: any[]) {
@@ -67,8 +74,14 @@ export function displayKnowledge(knowledgeList: any[]) {
   filterKnowledge();
 }
 
-export function loadKnowledge(openId: number | null, callbacks: LoadCallbacks) {
+export function loadKnowledge(
+  openId: number | null,
+  callbacks: LoadCallbacks,
+  options?: LoadOptions,
+) {
   console.log('Loading knowledge list...');
+  const modeFromUrl = (): 'modal' | 'panel' =>
+    new URL(window.location.href).searchParams.get('view') === 'panel' ? 'panel' : 'modal';
   fetchKnowledgeList(
     result => {
       let knowledgeList;
@@ -96,7 +109,8 @@ export function loadKnowledge(openId: number | null, callbacks: LoadCallbacks) {
 
       const normalizedOpenId = normalizeKnowledgeId(openId);
       if (normalizedOpenId !== null) {
-        callbacks.showDetail(normalizedOpenId, false);
+        const mode = options?.mode || modeFromUrl();
+        callbacks.showDetail(normalizedOpenId, { updateHistory: false, mode });
       }
     },
     error => {

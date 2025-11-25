@@ -7,7 +7,10 @@ import { showNotification } from '../system/notifications';
 
 type FormControllerOptions = {
   closeDetailModal: () => void;
-  showDetail: (id: any, updateHistory?: boolean) => void;
+  showDetail: (
+    id: any,
+    options?: boolean | { updateHistory?: boolean; mode?: 'modal' | 'panel' },
+  ) => void;
   showError: (error: any) => void;
 };
 
@@ -30,10 +33,16 @@ export function submitUpdate(event: Event) {
     onSuccess: () => {
       closeEditModalForm();
       closeDetailModal();
-      loadKnowledge(null, {
-        showDetail,
-        showError,
-      });
+      const viewParam = new URL(window.location.href).searchParams.get('view');
+      const mode = viewParam === 'panel' ? 'panel' : 'modal';
+      loadKnowledge(
+        null,
+        {
+          showDetail,
+          showError,
+        },
+        { mode },
+      );
       showNotification('ナレッジを更新しました', { type: 'success' });
     },
     onError: message => showError(message),

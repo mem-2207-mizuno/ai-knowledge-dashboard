@@ -3,6 +3,7 @@ import { fetchKnowledgeDetail } from '../data/api';
 import {
   displayDetail as displayDetailModal,
   closeDetailModal,
+  closeDetailPanel as closeDetailPanelUi,
   copyShareLink as copyShareLinkUtil,
   submitComment as submitCommentAction,
   addLike as addLikeAction,
@@ -31,7 +32,19 @@ function requireOptions(): DetailControllerOptions {
   return controllerOptions;
 }
 
-export function showDetail(id: any, updateHistory = true) {
+type ShowDetailOptions = {
+  updateHistory?: boolean;
+  mode?: 'modal' | 'panel';
+};
+
+function normalizeShowOptions(option?: boolean | ShowDetailOptions): ShowDetailOptions {
+  if (typeof option === 'boolean') {
+    return { updateHistory: option };
+  }
+  return option || {};
+}
+
+export function showDetail(id: any, options?: boolean | ShowDetailOptions) {
   const { showError } = requireOptions();
   const normalizedId = normalizeKnowledgeId(id);
   if (normalizedId === null) {
@@ -39,9 +52,19 @@ export function showDetail(id: any, updateHistory = true) {
     return;
   }
 
+  const parsedOptions = normalizeShowOptions(options);
+  const updateHistory = parsedOptions.updateHistory ?? true;
+  const viewParam = new URL(window.location.href).searchParams.get('view');
+  const mode: 'modal' | 'panel' = parsedOptions.mode || (viewParam === 'panel' ? 'panel' : 'modal');
+
   if (updateHistory) {
     const url = new URL(window.location.href);
     url.searchParams.set('id', normalizedId.toString());
+    if (mode === 'panel') {
+      url.searchParams.set('view', 'panel');
+    } else {
+      url.searchParams.delete('view');
+    }
     if (url.href !== window.location.href) {
       window.history.pushState({ id: normalizedId }, '', url.search);
     }
@@ -49,7 +72,7 @@ export function showDetail(id: any, updateHistory = true) {
 
   const knowledge = getAllKnowledge().find(k => k.id == normalizedId);
   if (knowledge) {
-    displayDetailSafe(knowledge, showError);
+    displayDetailSafe(knowledge, showError, mode);
     return;
   }
 
@@ -68,7 +91,7 @@ export function showDetail(id: any, updateHistory = true) {
       } else {
         detail = result;
       }
-      displayDetailSafe(detail, showError);
+      displayDetailSafe(detail, showError, mode);
     },
     error => {
       console.error('Failed to fetch detail:', error);
@@ -77,9 +100,9 @@ export function showDetail(id: any, updateHistory = true) {
   );
 }
 
-function displayDetailSafe(knowledge: any, showError: (error: any) => void) {
+function displayDetailSafe(knowledge: any, showError: (error: any) => void, mode: 'modal' | 'panel') {
   try {
-    displayDetailModal(knowledge);
+    displayDetailModal(knowledge, mode);
   } catch (error) {
     showError(error);
   }
@@ -87,6 +110,15 @@ function displayDetailSafe(knowledge: any, showError: (error: any) => void) {
 
 export function closeModal() {
   closeDetailModal();
+}
+
+export function closeDetailPanel() {
+  closeDetailPanelUi();
+}
+
+function currentViewModeFromUrl(): 'modal' | 'panel' {
+  const viewParam = new URL(window.location.href).searchParams.get('view');
+  return viewParam === 'panel' ? 'panel' : 'modal';
 }
 
 export function copyShareLink(id: any) {
@@ -99,14 +131,28 @@ export function copyShareLink(id: any) {
   copyShareLinkUtil(normalizedId);
 }
 
+export function openDetailPanel(id: any) {
+  const { showError } = requireOptions();
+  const normalizedId = normalizeKnowledgeId(id);
+  if (normalizedId === null) {
+    showError('詳細を表示できませんでした（IDが不正です）');
+    return;
+  }
+  showDetail(normalizedId, { mode: 'panel' });
+}
+
 export function submitComment(knowledgeId: number) {
   const { showError } = requireOptions();
   submitCommentAction(knowledgeId, {
     onSuccess: () => {
-      loadKnowledge(knowledgeId, {
-        showDetail,
-        showError,
-      });
+        loadKnowledge(
+          knowledgeId,
+          {
+            showDetail,
+            showError,
+          },
+          { mode: currentViewModeFromUrl() },
+        );
     },
     onError: message => showError(message),
     onUpdate: () => {
