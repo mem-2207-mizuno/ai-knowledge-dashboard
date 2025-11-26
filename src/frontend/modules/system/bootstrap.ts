@@ -1,7 +1,7 @@
 import { setupForms } from '../ui/forms';
 import { setupFormControls } from '../ui/metadata';
 import { setupTagInputs, setTags } from '../ui/tagsInput';
-import { updateCategoryUI, updateViewUI, updateInsights } from '../ui/filters';
+import { updateCategoryUI, updateViewUI, updateInsights, updateSortUI } from '../ui/filters';
 import { normalizeKnowledgeId } from './utils';
 import { displayKnowledge, loadKnowledge } from '../data/knowledgeList';
 
@@ -32,6 +32,7 @@ export function bootstrapApp(options: BootstrapOptions) {
   setTags('edit', []);
   updateCategoryUI();
   updateViewUI();
+  updateSortUI();
   updateInsights();
 
   window.onclick = function (event) {

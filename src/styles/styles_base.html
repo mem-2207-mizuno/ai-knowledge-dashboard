@@ -279,6 +279,53 @@
     gap: 16px;
   }
 
+  .list-toolbar {
+    margin: 10px 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .list-toolbar-title {
+    font-weight: 600;
+    font-size: 16px;
+  }
+
+  .sort-controls {
+    display: inline-flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .sort-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: #fff;
+    cursor: pointer;
+    font-size: 14px;
+    color: var(--text);
+    transition:
+      background 0.2s,
+      border 0.2s,
+      transform 0.2s;
+  }
+
+  .sort-button:hover {
+    transform: translateY(-1px);
+  }
+
+  .sort-button.active {
+    background: var(--primary-soft);
+    border-color: var(--primary);
+    color: var(--primary);
+    font-weight: 600;
+  }
+
   .insight-card {
     background: var(--card-bg);
     border: 1px solid var(--border);

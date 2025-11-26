@@ -8,6 +8,8 @@ import {
   getAllKnowledge,
   getLikedKnowledgeIds,
   isKnowledgeLiked,
+  setCurrentSort,
+  getCurrentSort,
 } from '../data/state';
 import { renderKnowledgeGrid } from './render';
 
@@ -40,6 +42,22 @@ export function updateViewUI() {
 export function setView(view: 'all' | 'favorites' | 'archived') {
   setCurrentView(view);
   updateViewUI();
+  filterKnowledge();
+}
+
+export function updateSortUI() {
+  const currentSort = getCurrentSort();
+  document.querySelectorAll('.sort-button').forEach(item => {
+    const sort = item.getAttribute('data-sort');
+    if (sort) {
+      item.classList.toggle('active', sort === currentSort);
+    }
+  });
+}
+
+export function setSort(sort: 'asc' | 'desc') {
+  setCurrentSort(sort);
+  updateSortUI();
   filterKnowledge();
 }
 
@@ -115,6 +133,7 @@ export function filterKnowledge() {
   const activeTags = getSelectedTags();
   const category = getSelectedCategory();
   const currentView = getCurrentView();
+  const currentSort = getCurrentSort();
   const filteredList = allKnowledge.filter(k => {
     const status = (k.status || 'open').toLowerCase();
     const isArchived = status === 'archived';
@@ -142,7 +161,12 @@ export function filterKnowledge() {
           : true;
     return matchesSearch && matchesTags && matchesCategory && statusAllowed && matchesView;
   });
-  renderKnowledgeGrid(filteredList);
+  const sortedList = [...filteredList].sort((a, b) => {
+    const aTime = new Date(a.postedAt).getTime();
+    const bTime = new Date(b.postedAt).getTime();
+    return currentSort === 'desc' ? bTime - aTime : aTime - bTime;
+  });
+  renderKnowledgeGrid(sortedList);
   document.querySelectorAll('.tag-chip').forEach(chip => {
     const tag = chip.textContent || '';
     if (tag && activeTags.includes(tag)) {

@@ -10,6 +10,7 @@ import {
   setView as setViewFilter,
   searchKnowledge as searchKnowledgeCore,
   toggleTag as toggleTagCore,
+  setSort as setSortFilter,
 } from './modules/ui/filters';
 import { bootstrapApp } from './modules/system/bootstrap';
 import {
@@ -45,6 +46,7 @@ initFormsController({
 
 const handleSetCategory = (category: string) => setCategoryFilter(category);
 const handleSetView = (view: 'all' | 'favorites' | 'archived') => setViewFilter(view);
+const handleSetSort = (sort: 'asc' | 'desc') => setSortFilter(sort);
 const handleSearchKnowledge = () => searchKnowledgeCore();
 const handleToggleTag = (tag: string) => toggleTagCore(tag);
 
@@ -70,6 +72,7 @@ Object.assign(window as any, {
   setView: handleSetView,
   setCategory: handleSetCategory,
   toggleTag: handleToggleTag,
+  setSort: handleSetSort,
   showDetail,
   addLike,
   submitComment,

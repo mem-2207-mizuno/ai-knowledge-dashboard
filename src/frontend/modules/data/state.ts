@@ -7,6 +7,7 @@ let allKnowledge: Knowledge[] = [];
 let selectedTags: string[] = [];
 let selectedCategory = 'all';
 let currentView: 'all' | 'favorites' | 'archived' = 'all';
+let currentSort: 'asc' | 'desc' = 'desc';
 let clientId = '';
 let likedKnowledgeIds: Set<string> = new Set();
 
@@ -131,6 +132,14 @@ export function setCurrentView(view: 'all' | 'favorites' | 'archived') {
 
 export function getCurrentView(): 'all' | 'favorites' | 'archived' {
   return currentView;
+}
+
+export function setCurrentSort(sort: 'asc' | 'desc') {
+  currentSort = sort;
+}
+
+export function getCurrentSort(): 'asc' | 'desc' {
+  return currentSort;
 }
 
 export function findKnowledgeById(id: number): Knowledge | undefined {

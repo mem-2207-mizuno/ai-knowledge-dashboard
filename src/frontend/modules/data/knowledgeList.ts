@@ -7,6 +7,7 @@ import {
   updateInsights,
   updateTagFilter,
   filterKnowledge,
+  updateSortUI,
 } from '../ui/filters';
 import { renderKnowledgeGrid } from '../ui/render';
 import type { Comment } from '../../../types';
@@ -72,6 +73,7 @@ export function displayKnowledge(knowledgeList: any[]) {
   updateInsights();
   updateCategoryUI();
   updateViewUI();
+  updateSortUI();
   filterKnowledge();
 }
 
