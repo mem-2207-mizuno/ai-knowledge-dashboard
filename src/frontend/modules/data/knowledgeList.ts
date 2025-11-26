@@ -21,6 +21,7 @@ type LoadCallbacks = {
 
 type LoadOptions = {
   mode?: 'modal' | 'panel';
+  skipShowDetail?: boolean;
 };
 
 export function displayKnowledge(knowledgeList: any[]) {
@@ -108,7 +109,7 @@ export function loadKnowledge(
       displayKnowledge(knowledgeList);
 
       const normalizedOpenId = normalizeKnowledgeId(openId);
-      if (normalizedOpenId !== null) {
+      if (normalizedOpenId !== null && !options?.skipShowDetail) {
         const mode = options?.mode || modeFromUrl();
         callbacks.showDetail(normalizedOpenId, { updateHistory: false, mode });
       }

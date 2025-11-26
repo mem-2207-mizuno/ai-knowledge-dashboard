@@ -23,6 +23,7 @@ import {
   handleCommentKeydown,
   closeDetailPanel,
   openDetailPanel,
+  archiveKnowledge,
 } from './modules/controllers/detailController';
 import { initFormsController, submitKnowledge, submitUpdate } from './modules/controllers/formsController';
 import { showError } from './modules/system/errors';
@@ -43,7 +44,7 @@ initFormsController({
 });
 
 const handleSetCategory = (category: string) => setCategoryFilter(category);
-const handleSetView = (view: 'all' | 'favorites') => setViewFilter(view);
+const handleSetView = (view: 'all' | 'favorites' | 'archived') => setViewFilter(view);
 const handleSearchKnowledge = () => searchKnowledgeCore();
 const handleToggleTag = (tag: string) => toggleTagCore(tag);
 
@@ -76,6 +77,7 @@ Object.assign(window as any, {
   handleCommentKeydown,
   copyShareLink,
   openDetailPanel,
+  archiveKnowledge,
   openEditModal: openEditModalForm,
   closeEditModal: closeEditModalForm,
   submitUpdate,

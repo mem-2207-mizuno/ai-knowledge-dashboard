@@ -14,6 +14,9 @@ import {
 import { normalizeKnowledgeId } from '../system/utils';
 import { loadKnowledge } from '../data/knowledgeList';
 import { updateInsights } from '../ui/filters';
+import { getAllKnowledge, findKnowledgeById, setAllKnowledge } from '../data/state';
+import { updateKnowledge } from '../data/api';
+import { showNotification } from '../system/notifications';
 
 type DetailControllerOptions = {
   showError: (error: any) => void;
@@ -177,6 +180,71 @@ export function deleteComment(knowledgeId: number, commentId: number) {
     onSuccess: () => updateInsights(),
     onError: message => showError(message),
   });
+}
+
+export function archiveKnowledge(knowledgeId: number, nextStatus: 'archived' | 'open' = 'archived') {
+  const { showError } = requireOptions();
+  const knowledge = findKnowledgeById(knowledgeId);
+  if (!knowledge) {
+    showError('ナレッジが見つかりませんでした');
+    return;
+  }
+  const archiveButton = document.getElementById(`archive-btn-${knowledgeId}`) as HTMLButtonElement | null;
+  if (archiveButton) {
+    archiveButton.disabled = true;
+  }
+
+  const finalize = () => {
+    if (archiveButton) {
+      archiveButton.disabled = false;
+    }
+  };
+
+  updateKnowledge(
+    knowledgeId,
+    {
+      title: knowledge.title || '',
+      url: knowledge.url || '',
+      comment: knowledge.comment || '',
+      tags: knowledge.tags || [],
+      postedBy: knowledge.postedBy || '匿名',
+      thumbnailUrl: knowledge.thumbnailUrl || '',
+      category: knowledge.category || 'article',
+      status: nextStatus,
+      metadata: knowledge.metadata || {},
+    },
+    result => {
+      const parsed = typeof result === 'string' ? JSON.parse(result) : result;
+      if (!parsed?.success) {
+        showError(parsed?.error || 'アーカイブに失敗しました');
+        finalize();
+        return;
+      }
+      knowledge.status = nextStatus;
+      setAllKnowledge([...getAllKnowledge()]);
+      const mode = currentViewModeFromUrl();
+      loadKnowledge(
+        null,
+        {
+          showDetail,
+          showError,
+        },
+        { mode },
+      );
+      closeDetailModal();
+      closeDetailPanel();
+      showNotification(
+        nextStatus === 'archived' ? 'アーカイブしました' : 'アーカイブを解除しました',
+        { type: 'success' },
+      );
+      finalize();
+    },
+    error => {
+      console.error('Failed to update status', error);
+      showError(error?.message || 'アーカイブに失敗しました');
+      finalize();
+    },
+  );
 }
 
 export const handleCommentKeydown = handleCommentKeydownUi;

@@ -245,6 +245,10 @@ function renderActionButtons(knowledge: any, mode: DetailMode) {
   const isLiked = knowledge.id ? isKnowledgeLiked(knowledge.id) : false;
   const likePrefix = mode === 'panel' ? PANEL_LIKE_BUTTON_PREFIX : MODAL_LIKE_BUTTON_PREFIX;
   const likeClass = `icon-button ${isLiked ? 'active' : ''}`;
+  const isArchived = (knowledge.status || 'open').toLowerCase() === 'archived';
+  const archiveAction = isArchived ? 'open' : 'archived';
+  const archiveTitle = isArchived ? 'アーカイブを解除' : 'アーカイブ';
+  const archiveIcon = isArchived ? 'unarchive' : 'inventory_2';
   const expandButton =
     mode === 'modal'
       ? `<button class="icon-button" onclick="openDetailPanel(${knowledge.id})" title="全体表示">
@@ -264,6 +268,9 @@ function renderActionButtons(knowledge: any, mode: DetailMode) {
       </button>
       <button class="icon-button" onclick="openEditModal(${knowledge.id})" title="編集">
         <span class="material-icons">edit</span>
+      </button>
+      <button id="archive-btn-${knowledge.id}" class="icon-button" onclick="archiveKnowledge(${knowledge.id}, '${archiveAction}')" title="${archiveTitle}">
+        <span class="material-icons">${archiveIcon}</span>
       </button>
       ${expandButton}
     </div>

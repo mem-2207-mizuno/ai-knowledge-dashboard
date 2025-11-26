@@ -37,12 +37,12 @@ export function submitKnowledge(event: Event) {
       const viewParam = new URL(window.location.href).searchParams.get('view');
       const mode = viewParam === 'panel' ? 'panel' : 'modal';
       loadKnowledge(
-        newId ?? null,
+        null,
         {
           showDetail,
           showError,
         },
-        { mode },
+        { mode, skipShowDetail: true },
       );
       showNotification('ナレッジを追加しました', { type: 'success' });
     },

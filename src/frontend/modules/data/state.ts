@@ -6,7 +6,7 @@ const LIKED_STORAGE_KEY = 'ai-knowledge-dashboard-liked-ids';
 let allKnowledge: Knowledge[] = [];
 let selectedTags: string[] = [];
 let selectedCategory = 'all';
-let currentView: 'all' | 'favorites' = 'all';
+let currentView: 'all' | 'favorites' | 'archived' = 'all';
 let clientId = '';
 let likedKnowledgeIds: Set<string> = new Set();
 
@@ -125,11 +125,11 @@ export function getSelectedCategory(): string {
   return selectedCategory;
 }
 
-export function setCurrentView(view: 'all' | 'favorites') {
+export function setCurrentView(view: 'all' | 'favorites' | 'archived') {
   currentView = view;
 }
 
-export function getCurrentView(): 'all' | 'favorites' {
+export function getCurrentView(): 'all' | 'favorites' | 'archived' {
   return currentView;
 }
 

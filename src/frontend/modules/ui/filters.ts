@@ -37,7 +37,7 @@ export function updateViewUI() {
   });
 }
 
-export function setView(view: 'all' | 'favorites') {
+export function setView(view: 'all' | 'favorites' | 'archived') {
   setCurrentView(view);
   updateViewUI();
   filterKnowledge();
@@ -45,15 +45,18 @@ export function setView(view: 'all' | 'favorites') {
 
 export function updateInsights() {
   const allKnowledge = getAllKnowledge();
+  const activeKnowledge = allKnowledge.filter(k => (k.status || 'open') !== 'archived');
+  const favoriteIds = getLikedKnowledgeIds();
   const totalEl = document.getElementById('statTotalPosts');
   if (totalEl) {
-    totalEl.textContent = allKnowledge.length.toString();
+    totalEl.textContent = activeKnowledge.length.toString();
   }
   const favoriteEl = document.getElementById('statFavorites');
   if (favoriteEl) {
-    favoriteEl.textContent = getLikedKnowledgeIds().size.toString();
+    const favoriteCount = activeKnowledge.filter(item => favoriteIds.has(item.id.toString())).length;
+    favoriteEl.textContent = favoriteCount.toString();
   }
-  const commentCount = allKnowledge.reduce((sum, item) => {
+  const commentCount = activeKnowledge.reduce((sum, item) => {
     return sum + (item.comments ? item.comments.length : 0);
   }, 0);
   const commentsEl = document.getElementById('statComments');
@@ -113,6 +116,8 @@ export function filterKnowledge() {
   const category = getSelectedCategory();
   const currentView = getCurrentView();
   const filteredList = allKnowledge.filter(k => {
+    const status = (k.status || 'open').toLowerCase();
+    const isArchived = status === 'archived';
     const normalizedCategory = k.category || 'article';
     let matchesSearch = true;
     if (searchWord) {
@@ -127,8 +132,15 @@ export function filterKnowledge() {
       matchesTags = activeTags.some(tag => k.tags && k.tags.includes(tag));
     }
     const matchesCategory = category === 'all' || normalizedCategory === category;
-    const matchesView = currentView === 'all' ? true : isKnowledgeLiked(k.id);
-    return matchesSearch && matchesTags && matchesCategory && matchesView;
+    const statusAllowed =
+      currentView === 'archived' ? isArchived : !isArchived; // アーカイブは専用ビュー、それ以外では除外
+    const matchesView =
+      currentView === 'favorites'
+        ? isKnowledgeLiked(k.id) && !isArchived
+        : currentView === 'archived'
+          ? true
+          : true;
+    return matchesSearch && matchesTags && matchesCategory && statusAllowed && matchesView;
   });
   renderKnowledgeGrid(filteredList);
   document.querySelectorAll('.tag-chip').forEach(chip => {
