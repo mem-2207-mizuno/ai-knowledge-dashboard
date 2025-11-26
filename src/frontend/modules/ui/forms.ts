@@ -47,12 +47,16 @@ export function closeEditModal() {
 
 export function submitKnowledge(
   event: Event,
-  callbacks: {
-    onSuccess: () => void;
-    onError: (message: string) => void;
+  callbacks?: {
+    onSuccess?: (newId?: number) => void;
+    onError?: (message: string) => void;
   },
 ) {
   event.preventDefault();
+  const safeCallbacks = {
+    onSuccess: callbacks?.onSuccess || (() => {}),
+    onError: callbacks?.onError || ((message: string) => console.error(message)),
+  };
   commitPendingTagInput('add');
   const tags = getTags('add');
   const metadata = collectMetadata('add');
@@ -72,7 +76,7 @@ export function submitKnowledge(
   };
 
   if (!knowledge.title || !knowledge.url || !knowledge.postedBy) {
-    callbacks.onError('タイトル、URL、投稿者は必須項目です');
+    safeCallbacks.onError('タイトル、URL、投稿者は必須項目です');
     return;
   }
 
@@ -91,20 +95,20 @@ export function submitKnowledge(
       try {
         const response = typeof result === 'string' ? JSON.parse(result) : result;
         if (response.success) {
-          callbacks.onSuccess();
+          safeCallbacks.onSuccess(response.id);
         } else {
-          callbacks.onError(response.error || 'ナレッジの追加に失敗しました');
+          safeCallbacks.onError(response.error || 'ナレッジの追加に失敗しました');
         }
       } catch (error) {
         console.error('Error parsing response:', error);
-        callbacks.onError('ナレッジの追加に失敗しました');
+        safeCallbacks.onError('ナレッジの追加に失敗しました');
       }
     },
     error => {
       submitButton.disabled = false;
       submitButton.textContent = originalText;
       console.error('Error adding knowledge:', error);
-      callbacks.onError(error?.message || 'ナレッジの追加に失敗しました');
+      safeCallbacks.onError(error?.message || 'ナレッジの追加に失敗しました');
     },
   );
 }

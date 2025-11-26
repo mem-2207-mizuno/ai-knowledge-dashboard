@@ -2,7 +2,6 @@ import { initClientState } from './modules/data/state';
 import {
   openAddModal as openAddModalForm,
   closeAddModal as closeAddModalForm,
-  submitKnowledge as submitKnowledgeForm,
   openEditModal as openEditModalForm,
   closeEditModal as closeEditModalForm,
 } from './modules/ui/forms';
@@ -25,7 +24,7 @@ import {
   closeDetailPanel,
   openDetailPanel,
 } from './modules/controllers/detailController';
-import { initFormsController, submitUpdate } from './modules/controllers/formsController';
+import { initFormsController, submitKnowledge, submitUpdate } from './modules/controllers/formsController';
 import { showError } from './modules/system/errors';
 import { showNotification } from './modules/system/notifications';
 import '@blocknote/core/style.css';
@@ -38,6 +37,7 @@ initDetailController({
 });
 initFormsController({
   closeDetailModal: closeModal,
+  closeAddModal: closeAddModalForm,
   showDetail,
   showError,
 });
@@ -63,7 +63,7 @@ window.onload = function () {
 Object.assign(window as any, {
   openAddModal: openAddModalForm,
   closeAddModal: closeAddModalForm,
-  submitKnowledge: submitKnowledgeForm,
+  submitKnowledge,
   closeModal,
   searchKnowledge: handleSearchKnowledge,
   setView: handleSetView,

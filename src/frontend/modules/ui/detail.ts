@@ -330,10 +330,6 @@ export function displayDetail(knowledge: any, mode: DetailMode = 'modal') {
       <div class="detail-panel-header">
         <div class="detail-panel-title-group">
           <h2>${knowledge.title || 'ナレッジ詳細'}</h2>
-          <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-            <span class="category-badge">${getCategoryInfo(knowledge.category)?.label || 'ナレッジ'}</span>
-            <span class="status-pill">${(knowledge.status || 'open').toUpperCase()}</span>
-          </div>
         </div>
         <div class="detail-panel-actions">
           <button class="icon-button" onclick="closeDetailPanel()" title="閉じる">
