@@ -32,6 +32,7 @@ function doGet(e: GoogleAppsScript.Events.DoGet): GoogleAppsScript.HTML.HtmlOutp
       console.log(`Ignoring non-numeric id parameter: ${trimmedId}`);
     }
   }
+  const initialView = e.parameter.view === 'panel' ? 'panel' : 'modal';
 
   // アプリケーションのURLを取得してテンプレートに渡す
   // JSON.stringifyしない（エスケープ回避）
@@ -51,6 +52,7 @@ function doGet(e: GoogleAppsScript.Events.DoGet): GoogleAppsScript.HTML.HtmlOutp
     initialData,
     referenceData,
     initialId,
+    initialView,
     appUrl,
   };
   (template as any).serverData = JSON.stringify(serverData).replace(/</g, '\\u003c');

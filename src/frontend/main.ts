@@ -42,15 +42,16 @@ initFormsController({
   showError,
 });
 
-const setCategory = (category: string) => setCategoryFilter(category);
-const setView = (view: 'all' | 'favorites') => setViewFilter(view);
-const searchKnowledge = () => searchKnowledgeCore();
-const toggleTag = (tag: string) => toggleTagCore(tag);
+const handleSetCategory = (category: string) => setCategoryFilter(category);
+const handleSetView = (view: 'all' | 'favorites') => setViewFilter(view);
+const handleSearchKnowledge = () => searchKnowledgeCore();
+const handleToggleTag = (tag: string) => toggleTagCore(tag);
 
 window.onload = function () {
   bootstrapApp({
     initialData: SERVER_DATA.initialData,
     initialId: SERVER_DATA.initialId,
+    initialView: SERVER_DATA.initialView,
     showDetail,
     showError,
     closeDetail: closeModal,
@@ -59,16 +60,15 @@ window.onload = function () {
   });
 };
 
-const globalScope = window as any;
-Object.assign(globalScope, {
+Object.assign(window as any, {
   openAddModal: openAddModalForm,
   closeAddModal: closeAddModalForm,
   submitKnowledge: submitKnowledgeForm,
   closeModal,
-  searchKnowledge,
-  setView,
-  setCategory,
-  toggleTag,
+  searchKnowledge: handleSearchKnowledge,
+  setView: handleSetView,
+  setCategory: handleSetCategory,
+  toggleTag: handleToggleTag,
   showDetail,
   addLike,
   submitComment,

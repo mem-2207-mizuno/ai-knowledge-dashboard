@@ -8,11 +8,20 @@ import { displayKnowledge, loadKnowledge } from '../data/knowledgeList';
 interface BootstrapOptions {
   initialData: any;
   initialId: any;
+  initialView?: 'modal' | 'panel';
   showDetail: (id: number, options?: boolean | { updateHistory?: boolean; mode?: 'modal' | 'panel' }) => void;
   showError: (error: any) => void;
   closeDetail: () => void;
   closeAdd: () => void;
   closeEdit: () => void;
+}
+
+function resolveInitialView(options: BootstrapOptions): 'modal' | 'panel' {
+  if (options.initialView === 'panel') {
+    return 'panel';
+  }
+  const viewParam = new URL(window.location.href).searchParams.get('view');
+  return viewParam === 'panel' ? 'panel' : 'modal';
 }
 
 export function bootstrapApp(options: BootstrapOptions) {
@@ -42,8 +51,7 @@ export function bootstrapApp(options: BootstrapOptions) {
 
   const normalizedInitialId = normalizeKnowledgeId(options.initialId);
   const initialData = options.initialData;
-  const viewParam = new URL(window.location.href).searchParams.get('view');
-  const initialViewMode: 'modal' | 'panel' = viewParam === 'panel' ? 'panel' : 'modal';
+  const initialViewMode = resolveInitialView(options);
   const triggerInitialOpen = (id: number, mode: 'modal' | 'panel') => {
     // 二段階で遅延呼び出しして、GAS配信時の初期レンダリング遅延にも耐える
     setTimeout(() => options.showDetail(id, { updateHistory: false, mode }), 100);

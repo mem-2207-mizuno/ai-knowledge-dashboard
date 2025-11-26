@@ -1,2 +1,19 @@
-# 無視するファイル
+# 配布対象は dist 以下の生成物のみ
 .DS_Store
+src/**
+node_modules/**
+docs/**
+README.md
+tsconfig.json
+tsconfig.scripts.json
+build.ts
+package.json
+package-lock.json
+.git/**
+.clasp.json
+.clasp.json.example
+.prettierignore
+.prettierrc
+.eslintignore
+.eslintrc.cjs
+.bunfig.toml
