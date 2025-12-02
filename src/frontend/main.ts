@@ -26,6 +26,7 @@ import {
   openDetailPanel,
   archiveKnowledge,
 } from './modules/controllers/detailController';
+import { closeDetailPanelIfOpen } from './modules/ui/detail';
 import { initFormsController, submitKnowledge, submitUpdate } from './modules/controllers/formsController';
 import { showError } from './modules/system/errors';
 import { showNotification } from './modules/system/notifications';
@@ -86,4 +87,5 @@ Object.assign(window as any, {
   submitUpdate,
   showNotification,
   closeDetailPanel,
+  closeDetailPanelIfOpen,
 });

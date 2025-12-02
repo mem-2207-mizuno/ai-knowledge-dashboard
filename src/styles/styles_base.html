@@ -290,6 +290,51 @@
   .list-toolbar-title {
     font-weight: 600;
     font-size: 16px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .list-toolbar-label {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .list-toolbar-back {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--text);
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    padding: 6px 10px;
+    cursor: pointer;
+    transition:
+      background 0.2s,
+      border-color 0.2s;
+  }
+
+  .list-toolbar-back:hover,
+  .list-toolbar-back:focus-visible {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: var(--border);
+    outline: none;
+  }
+
+  .list-toolbar-arrow {
+    font-size: 18px;
+    line-height: 1;
+  }
+
+  .main-content.panel-active .list-toolbar-back {
+    display: inline-flex;
+  }
+
+  .main-content.panel-active .list-toolbar-label {
+    display: none;
   }
 
   .sort-controls {

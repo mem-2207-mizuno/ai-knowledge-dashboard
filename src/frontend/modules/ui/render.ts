@@ -33,6 +33,29 @@ export function renderMarkdown(markdown: string): string {
   }
 }
 
+function stripMarkdownPreview(text: string): string {
+  if (!text) {
+    return '';
+  }
+  // Drop code fences first to avoid leaking their contents in the preview
+  let result = text.replace(/```[\s\S]*?```/g, '');
+  // Images/links -> keep the label only
+  result = result.replace(/!\[([^\]]*)\]\([^\)]+\)/g, '$1');
+  result = result.replace(/\[([^\]]+)\]\([^\)]+\)/g, '$1');
+  // Inline code -> keep inner text
+  result = result.replace(/`([^`]+)`/g, '$1');
+  // Headings, blockquotes, lists, numbering markers
+  result = result.replace(/^\s{0,3}#{1,6}\s+/gm, '');
+  result = result.replace(/^\s*>+\s?/gm, '');
+  result = result.replace(/^\s*[-*+]\s+/gm, '');
+  result = result.replace(/^\s*\d+\.\s+/gm, '');
+  // Bold/italic markers
+  result = result.replace(/(\*{1,3}|_{1,3})([^*_]+?)\1/g, '$2');
+  // Remove remaining HTML tags and collapse whitespace
+  result = result.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+  return result;
+}
+
 export function getCategoryInfo(categoryId?: string) {
   const normalized = categoryId || 'article';
   return (
@@ -85,10 +108,7 @@ export function createKnowledgeCard(knowledge: KnowledgeRecord): string {
   const dateStr = date.toLocaleDateString('ja-JP');
   const tags = knowledge.tags || [];
   const tagsHtml = tags.map((tag: string) => `<span class="card-tag">${tag}</span>`).join('');
-  const descriptionSource = (knowledge.comment || '')
-    .replace(/<[^>]+>/g, '')
-    .replace(/\n+/g, ' ')
-    .trim();
+  const descriptionSource = stripMarkdownPreview(knowledge.comment || '');
   const description =
     descriptionSource.length > 0
       ? descriptionSource.length > 120
