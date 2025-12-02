@@ -30,9 +30,11 @@ export function slugifyTag(name: string): string {
   if (!name) {
     return '';
   }
-  return name
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9-]/g, '');
+  const normalized = name.trim().toLowerCase().normalize('NFKC');
+  const slug = normalized.replace(/\s+/g, '-').replace(/[^\p{L}\p{N}-]/gu, '');
+  if (slug) {
+    return slug;
+  }
+  // If the string becomes empty (e.g. entirely symbols), fall back to a whitespace-normalized version
+  return normalized.replace(/\s+/g, '-');
 }
