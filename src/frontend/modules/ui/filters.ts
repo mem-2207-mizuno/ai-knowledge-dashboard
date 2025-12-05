@@ -11,6 +11,7 @@ import {
   setCurrentSort,
   getCurrentSort,
 } from '../data/state';
+import { closeDetailPanelIfOpen } from './detail';
 import { renderKnowledgeGrid } from './render';
 
 export function updateCategoryUI() {
@@ -24,6 +25,7 @@ export function updateCategoryUI() {
 }
 
 export function setCategory(category: string) {
+  closeDetailPanelIfOpen();
   setSelectedCategory(category);
   updateCategoryUI();
   filterKnowledge();
@@ -40,6 +42,7 @@ export function updateViewUI() {
 }
 
 export function setView(view: 'all' | 'favorites' | 'archived') {
+  closeDetailPanelIfOpen();
   setCurrentView(view);
   updateViewUI();
   filterKnowledge();
@@ -56,6 +59,7 @@ export function updateSortUI() {
 }
 
 export function setSort(sort: 'asc' | 'desc') {
+  closeDetailPanelIfOpen();
   setCurrentSort(sort);
   updateSortUI();
   filterKnowledge();
@@ -111,6 +115,7 @@ export function updateTagFilter(knowledgeList: any[], activeTags: string[]) {
 }
 
 export function toggleTag(tag: string) {
+  closeDetailPanelIfOpen();
   const tags = [...getSelectedTags()];
   const index = tags.indexOf(tag);
   if (index > -1) {
@@ -123,6 +128,7 @@ export function toggleTag(tag: string) {
 }
 
 export function searchKnowledge() {
+  closeDetailPanelIfOpen();
   filterKnowledge();
 }
 

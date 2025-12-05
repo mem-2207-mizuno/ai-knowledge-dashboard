@@ -22,7 +22,13 @@
   </div>
 
   <div class="list-toolbar">
-    <div class="list-toolbar-title">記事一覧</div>
+    <div class="list-toolbar-title">
+      <span class="list-toolbar-label">記事一覧</span>
+      <button class="list-toolbar-back" type="button" onclick="closeDetailPanelIfOpen()">
+        <span class="list-toolbar-arrow" aria-hidden="true">＜</span>
+        <span class="list-toolbar-back-text">記事一覧</span>
+      </button>
+    </div>
     <div class="sort-controls" role="group" aria-label="並び替え">
       <button class="sort-button" data-sort="desc" onclick="setSort('desc')">🆕 新しい順</button>
       <button class="sort-button" data-sort="asc" onclick="setSort('asc')">📜 古い順</button>

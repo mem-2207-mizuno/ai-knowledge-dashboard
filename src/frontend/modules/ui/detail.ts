@@ -355,6 +355,19 @@ export function displayDetail(knowledge: any, mode: DetailMode = 'modal') {
   renderReadonlyMarkdown('knowledgeDetailBody', knowledge.comment || '（説明なし）');
 }
 
+export function isDetailPanelActive(): boolean {
+  const panel = document.getElementById('detailPanel');
+  return Boolean(panel && panel.classList.contains('active'));
+}
+
+export function closeDetailPanelIfOpen(): boolean {
+  if (!isDetailPanelActive()) {
+    return false;
+  }
+  closeDetailPanel();
+  return true;
+}
+
 export function closeDetailModal() {
   const url = new URL(window.location.href);
   if (url.searchParams.has('id')) {
