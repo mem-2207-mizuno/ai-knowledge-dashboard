@@ -23,6 +23,10 @@ export function openAddModal() {
   form?.reset();
   setMarkdownValue('add', 'addComment', '');
   refreshMarkdownEditor('add');
+  const throwedCheckbox = document.getElementById('addThrowed') as HTMLInputElement | null;
+  if (throwedCheckbox) {
+    throwedCheckbox.checked = false;
+  }
   const categorySelect = document.getElementById('addCategory') as HTMLSelectElement | null;
   if (categorySelect) {
     categorySelect.value = DEFAULT_CATEGORY_VALUE || categorySelect.value;
@@ -73,6 +77,8 @@ export function submitKnowledge(
     thumbnailUrl: (document.getElementById('addThumbnailUrl') as HTMLInputElement).value.trim(),
     category,
     metadata,
+    throwed:
+      (document.getElementById('addThrowed') as HTMLInputElement | null)?.checked === true,
   };
 
   if (!knowledge.title || !knowledge.url || !knowledge.postedBy) {

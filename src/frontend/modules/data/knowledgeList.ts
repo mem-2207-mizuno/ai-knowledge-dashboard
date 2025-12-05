@@ -47,6 +47,7 @@ export function displayKnowledge(knowledgeList: any[]) {
     ...k,
     category: k.category || 'article',
     status: k.status || 'open',
+    throwed: k.throwed === true,
     likePending: false,
     postedAt: k.postedAt ? new Date(k.postedAt) : new Date(),
     comments: Array.isArray(k.comments)

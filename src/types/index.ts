@@ -22,6 +22,7 @@ export interface Knowledge {
   status?: string;
   metadata?: KnowledgeMetadata;
   likePending?: boolean;
+  throwed?: boolean;
 }
 
 /**

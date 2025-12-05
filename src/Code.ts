@@ -98,6 +98,7 @@ function addKnowledge(knowledge: {
   category?: string;
   status?: string;
   metadata?: Record<string, any>;
+  throwed?: boolean;
 }): string {
   const result = KnowledgeService.add(knowledge);
   return JSON.stringify(result);
@@ -116,8 +117,9 @@ function updateKnowledge(
     postedBy: string;
     thumbnailUrl?: string;
     category?: string;
-    status?: string;
-    metadata?: Record<string, any>;
+  status?: string;
+  metadata?: Record<string, any>;
+  throwed?: boolean;
   },
 ): string {
   const result = KnowledgeService.update(knowledgeId, knowledge);

@@ -25,6 +25,7 @@ export const KNOWLEDGE_SHEET_HEADERS = {
     'thumbnailUrl',
     'status',
     'metadataJson',
+    'throwed',
   ],
   TAGS: ['id', 'name', 'slug', 'color', 'aliases', 'createdAt'],
   POST_TAGS: ['postId', 'tagId', 'createdAt'],
@@ -59,6 +60,7 @@ interface PostRow {
   thumbnailUrl: string;
   status: string;
   metadata: Record<string, any>;
+  throwed: boolean;
 }
 
 export class KnowledgeService {
@@ -150,6 +152,12 @@ export class KnowledgeService {
         const thumbnailUrl = (row[9] as string) || '';
         const status = (row[10] as string) || DEFAULT_STATUS;
         const metadata = safeJsonParse<Record<string, any>>(row[11] as string, {});
+        const throwedRaw = row[12];
+        const throwed =
+          throwedRaw === true ||
+          throwedRaw === 'TRUE' ||
+          throwedRaw === 'true' ||
+          throwedRaw === '1';
 
         return {
           id,
@@ -164,6 +172,7 @@ export class KnowledgeService {
           thumbnailUrl,
           status,
           metadata,
+          throwed,
         };
       })
       .filter((row): row is PostRow => row !== null);
@@ -289,6 +298,7 @@ export class KnowledgeService {
       category: post.category,
       status: post.status,
       metadata,
+      throwed: post.throwed,
     };
   }
 
@@ -521,6 +531,7 @@ export class KnowledgeService {
     category?: string;
     status?: string;
     metadata?: Record<string, any>;
+    throwed?: boolean;
   }): { success: boolean; id?: number; error?: string } {
     try {
       const sheets = this.getSheets();
@@ -534,6 +545,7 @@ export class KnowledgeService {
         url: knowledge.url || '',
         ...(knowledge.metadata || {}),
       };
+      const throwed = knowledge.throwed === true;
 
       sheets.posts.appendRow([
         newId,
@@ -548,6 +560,7 @@ export class KnowledgeService {
         knowledge.thumbnailUrl || '',
         knowledge.status || DEFAULT_STATUS,
         JSON.stringify(metadata),
+        throwed,
       ]);
 
       if (tagIds.length > 0) {
@@ -579,6 +592,7 @@ export class KnowledgeService {
       category?: string;
       status?: string;
       metadata?: Record<string, any>;
+      throwed?: boolean;
     },
   ): { success: boolean; id?: number; error?: string } {
     try {
@@ -602,6 +616,11 @@ export class KnowledgeService {
 
       const existingPostedAt = rowValues[6] || new Date();
       const existingLikes = Number(rowValues[8]) || 0;
+      const existingThrowed =
+        rowValues[12] === true ||
+        rowValues[12] === 'TRUE' ||
+        rowValues[12] === 'true' ||
+        rowValues[12] === '1';
 
       sheets.posts
         .getRange(rowNumber, 2, 1, KNOWLEDGE_SHEET_HEADERS.POSTS.length - 1)
@@ -618,6 +637,7 @@ export class KnowledgeService {
             knowledge.thumbnailUrl || '',
             knowledge.status || rowValues[10] || DEFAULT_STATUS,
             JSON.stringify(metadata),
+            knowledge.throwed === true ? true : existingThrowed,
           ],
         ]);
 
