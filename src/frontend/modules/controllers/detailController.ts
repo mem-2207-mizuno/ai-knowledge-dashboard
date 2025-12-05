@@ -10,6 +10,8 @@ import {
   deleteComment as deleteCommentAction,
   handleCommentKeydown as handleCommentKeydownUi,
   refreshCommentsUI,
+  toggleCommentReactionUI,
+  openCommentReactionPicker,
 } from '../ui/detail';
 import { normalizeKnowledgeId } from '../system/utils';
 import { loadKnowledge } from '../data/knowledgeList';
@@ -248,3 +250,4 @@ export function archiveKnowledge(knowledgeId: number, nextStatus: 'archived' | '
 }
 
 export const handleCommentKeydown = handleCommentKeydownUi;
+export { toggleCommentReactionUI, openCommentReactionPicker };

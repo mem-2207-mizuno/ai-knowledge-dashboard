@@ -48,6 +48,8 @@
     "@blocknote/core": "^0.42.3",
     "@blocknote/mantine": "^0.42.3",
     "@blocknote/react": "^0.42.3",
+    "@emoji-mart/data": "^1.2.1",
+    "emoji-mart": "^5.6.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   }

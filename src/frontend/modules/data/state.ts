@@ -146,6 +146,22 @@ export function findKnowledgeById(id: number): Knowledge | undefined {
   return allKnowledge.find(item => item.id == id);
 }
 
+export function updateCommentReactionsInState(
+  knowledgeId: number,
+  commentId: number,
+  reactions: any[],
+) {
+  const knowledge = findKnowledgeById(knowledgeId);
+  if (!knowledge || !Array.isArray(knowledge.comments)) {
+    return;
+  }
+  const comment = knowledge.comments.find(c => c.id === commentId);
+  if (!comment) {
+    return;
+  }
+  comment.reactions = reactions;
+}
+
 export function appendOptimisticComment(knowledgeId: number, comment: Comment) {
   const knowledge = findKnowledgeById(knowledgeId);
   if (!knowledge) {

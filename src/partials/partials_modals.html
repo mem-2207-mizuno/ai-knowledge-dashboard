@@ -21,7 +21,7 @@
       <h2>ナレッジを追加</h2>
       <button class="close-button" onclick="closeAddModal()">&times;</button>
     </div>
-    <div id="addModalBody" style="padding: 20px 0">
+    <div id="addModalBody" style="padding-top: 20px">
       <form id="addKnowledgeForm" onsubmit="submitKnowledge(event)">
         <div class="notion-form">
           <input type="text" id="addTitle" class="notion-title-input" placeholder="タイトルを入力" required />
@@ -30,13 +30,13 @@
             <div class="property-row">
               <div class="property-label">カテゴリ</div>
               <div class="property-control">
-                <select id="addCategory" required></select>
+                <select id="addCategory"></select>
               </div>
             </div>
             <div class="property-row">
               <div class="property-label">参照URL</div>
               <div class="property-control">
-                <input type="url" id="addUrl" placeholder="https://example.com/article" required />
+                <input type="url" id="addUrl" placeholder="https://example.com/article" />
               </div>
             </div>
             <div class="property-row">
@@ -76,44 +76,15 @@
           </div>
         </div>
 
-        <div style="
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-            gap: 10px;
-            margin-top: 12px;
-            color: #333;
-          ">
-          <label for="addThrowed" style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+        <div class="modal-form-footer">
+          <label for="addThrowed" class="footer-checkbox">
             <input type="checkbox" id="addThrowed" />
             チャットに投稿しない
           </label>
-        </div>
-
-        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px">
-          <button type="button" onclick="closeAddModal()" style="
-              padding: 10px 20px;
-              background: #f5f5f5;
-              color: #333;
-              border: none;
-              border-radius: 5px;
-              cursor: pointer;
-              font-size: 16px;
-            ">
-            キャンセル
-          </button>
-          <button type="submit" style="
-              padding: 10px 20px;
-              background: #667eea;
-              color: white;
-              border: none;
-              border-radius: 5px;
-              cursor: pointer;
-              font-size: 16px;
-              font-weight: bold;
-            ">
-            追加
-          </button>
+          <div class="modal-form-footer-actions">
+            <button type="button" onclick="closeAddModal()" class="ghost-button">キャンセル</button>
+            <button type="submit" class="primary-button">追加</button>
+          </div>
         </div>
       </form>
     </div>
@@ -138,13 +109,13 @@
             <div class="property-row">
               <div class="property-label">カテゴリ</div>
               <div class="property-control">
-                <select id="editCategory" required></select>
+                <select id="editCategory"></select>
               </div>
             </div>
             <div class="property-row">
               <div class="property-label">参照URL</div>
               <div class="property-control">
-                <input type="url" id="editUrl" placeholder="https://example.com/article" required />
+                <input type="url" id="editUrl" placeholder="https://example.com/article" />
               </div>
             </div>
             <div class="property-row">
@@ -184,30 +155,9 @@
           </div>
         </div>
 
-        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px">
-          <button type="button" onclick="closeEditModal()" style="
-              padding: 10px 20px;
-              background: #f5f5f5;
-              color: #333;
-              border: none;
-              border-radius: 5px;
-              cursor: pointer;
-              font-size: 16px;
-            ">
-            キャンセル
-          </button>
-          <button type="submit" style="
-              padding: 10px 20px;
-              background: #667eea;
-              color: white;
-              border: none;
-              border-radius: 5px;
-              cursor: pointer;
-              font-size: 16px;
-              font-weight: bold;
-            ">
-            更新
-          </button>
+        <div class="modal-form-footer">
+          <button type="button" onclick="closeEditModal()" class="ghost-button">キャンセル</button>
+          <button type="submit" class="primary-button">更新</button>
         </div>
       </form>
     </div>

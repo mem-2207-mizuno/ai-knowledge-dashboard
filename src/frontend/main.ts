@@ -25,15 +25,21 @@ import {
   closeDetailPanel,
   openDetailPanel,
   archiveKnowledge,
+  toggleCommentReactionUI,
+  openCommentReactionPicker,
 } from './modules/controllers/detailController';
 import { closeDetailPanelIfOpen } from './modules/ui/detail';
 import { initFormsController, submitKnowledge, submitUpdate } from './modules/controllers/formsController';
 import { showError } from './modules/system/errors';
 import { showNotification } from './modules/system/notifications';
+import { init } from 'emoji-mart';
+import data from '@emoji-mart/data';
+import 'emoji-mart/dist/browser.js';
 import '@blocknote/core/style.css';
 import '@blocknote/mantine/style.css';
 
 declare const SERVER_DATA: any;
+init({ data });
 initClientState();
 initDetailController({
   showError,
@@ -88,4 +94,6 @@ Object.assign(window as any, {
   showNotification,
   closeDetailPanel,
   closeDetailPanelIfOpen,
+  toggleCommentReactionUI,
+  openCommentReactionPicker,
 });

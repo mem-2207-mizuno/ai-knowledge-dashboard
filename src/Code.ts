@@ -126,6 +126,11 @@ function updateKnowledge(
   return JSON.stringify(result);
 }
 
+function toggleCommentReaction(commentId: number, emoji: string, clientId?: string): string {
+  const result = KnowledgeService.toggleCommentReaction(commentId, emoji, clientId);
+  return JSON.stringify(result);
+}
+
 /**
  * コメントを追加するAPI
  */
@@ -167,3 +172,4 @@ globalScope.deleteComment = deleteComment;
 globalScope.addLike = addLike;
 globalScope.testSpreadsheetAccess = testSpreadsheetAccess;
 globalScope.include = include;
+globalScope.toggleCommentReaction = toggleCommentReaction;

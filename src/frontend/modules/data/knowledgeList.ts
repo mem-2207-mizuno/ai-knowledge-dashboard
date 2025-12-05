@@ -1,6 +1,6 @@
 import { fetchKnowledgeList } from './api';
 import { normalizeKnowledgeId } from '../system/utils';
-import { setAllKnowledge, getAllKnowledge, getSelectedTags } from './state';
+import { setAllKnowledge, getAllKnowledge, getSelectedTags, getClientId } from './state';
 import {
   updateCategoryUI,
   updateViewUI,
@@ -54,6 +54,14 @@ export function displayKnowledge(knowledgeList: any[]) {
       ? k.comments.map((comment: Comment) => ({
           ...comment,
           postedAt: comment.postedAt ? new Date(comment.postedAt) : new Date(),
+          reactions: Array.isArray((comment as any).reactions)
+            ? (comment as any).reactions.map((reaction: any) => ({
+                ...reaction,
+                reactedByMe: Array.isArray(reaction.reactors)
+                  ? reaction.reactors.includes(getClientId())
+                  : reaction.reactedByMe === true,
+              }))
+            : [],
         }))
       : [],
   }));

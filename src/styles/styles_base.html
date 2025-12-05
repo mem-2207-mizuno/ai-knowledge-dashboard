@@ -605,6 +605,8 @@
     max-height: 90vh;
     overflow-y: auto;
     box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15);
+    display: flex;
+    flex-direction: column;
   }
 
   .modal-header {
@@ -712,6 +714,7 @@
     border-radius: 10px;
     padding: 10px 12px;
     background: #f9fafb;
+    position: relative;
   }
 
   .comment-card[data-pending='true'] {
@@ -740,6 +743,117 @@
     font-size: 14px;
     color: #333;
     line-height: 1.6;
+    word-break: break-word;
+  }
+
+  .comment-reaction-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .reaction-chip-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    min-height: 30px;
+    align-items: center;
+  }
+
+  .reaction-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: #eef2ff;
+    border: 1px solid #e0e7ff;
+    color: #1f2937;
+    cursor: pointer;
+    transition: all 0.12s ease;
+    font-size: 13px;
+  }
+
+  .reaction-chip .reaction-count {
+    font-weight: 600;
+  }
+
+  .reaction-chip.active {
+    background: #2563eb;
+    border-color: #1d4ed8;
+    color: #fff;
+  }
+
+  .reaction-chip:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  .reaction-empty {
+    color: #9ca3af;
+    font-size: 13px;
+  }
+
+  .reaction-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    opacity: 0;
+    transition: opacity 0.12s ease;
+  }
+
+  .comment-card:hover .reaction-actions {
+    opacity: 1;
+  }
+
+  .reaction-quick-bar {
+    display: inline-flex;
+    gap: 6px;
+  }
+
+  .reaction-quick-btn {
+    border: 1px solid transparent;
+    background: transparent;
+    border-radius: 8px;
+    padding: 6px 8px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.12s ease;
+  }
+
+  .reaction-quick-btn:hover {
+    background: #eef2ff;
+    transform: translateY(-1px);
+  }
+
+  .reaction-quick-box {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    border-radius: 12px;
+    padding: 4px 6px;
+  }
+
+  .reaction-picker-trigger {
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    padding: 4px;
+    cursor: pointer;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #4b5563;
+    transition: all 0.12s ease;
+  }
+
+  .reaction-picker-trigger:hover {
+    background: #f3f4f6;
   }
 
   .comment-empty {
@@ -856,6 +970,50 @@
     border-radius: 8px;
     width: 32px;
     height: 32px;
+  }
+
+  .modal-form-footer {
+    position: sticky;
+    bottom: 0;
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 0 0;
+    margin-top: 12px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0) 0%, #fff 30%);
+    border-top: 1px solid #e5e7eb;
+  }
+
+  .modal-form-footer-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .ghost-button {
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 10px 14px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+
+  .ghost-button:hover {
+    background: #e5e7eb;
+  }
+
+  .footer-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #374151;
+    font-size: 14px;
+    cursor: pointer;
+    user-select: none;
   }
 
   .detail-item label {
@@ -1243,6 +1401,7 @@
       opacity: 0;
       transform: translateY(-8px);
     }
+
     to {
       opacity: 1;
       transform: translateY(0);

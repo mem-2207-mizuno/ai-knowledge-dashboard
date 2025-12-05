@@ -37,16 +37,8 @@ export function bootstrapApp(options: BootstrapOptions) {
 
   window.onclick = function (event) {
     const detailModal = document.getElementById('detailModal');
-    const addModal = document.getElementById('addModal');
-    const editModal = document.getElementById('editModal');
     if (event.target === detailModal) {
       options.closeDetail();
-    }
-    if (event.target === addModal) {
-      options.closeAdd();
-    }
-    if (event.target === editModal) {
-      options.closeEdit();
     }
   };
 

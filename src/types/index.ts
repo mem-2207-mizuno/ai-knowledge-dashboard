@@ -35,6 +35,14 @@ export interface Comment {
   postedAt: Date;
   pending?: boolean;
   tempId?: string;
+  reactions?: CommentReaction[];
+}
+
+export interface CommentReaction {
+  emoji: string;
+  count: number;
+  reactors?: string[];
+  reactedByMe?: boolean;
 }
 
 export interface TagRecord {

@@ -1,5 +1,12 @@
 import { SheetService } from './SheetService';
-import { Knowledge, Comment, TagRecord, PostCategory, CategoryFormConfig } from '../types';
+import {
+  Knowledge,
+  Comment,
+  TagRecord,
+  PostCategory,
+  CategoryFormConfig,
+  CommentReaction,
+} from '../types';
 import { safeJsonParse, slugifyTag } from '../utils';
 import { CATEGORY_FORM_CONFIGS } from '../config/categoryFormConfig';
 
@@ -9,6 +16,7 @@ export const KNOWLEDGE_SHEET_NAMES = {
   POST_TAGS: 'PostTags',
   COMMENTS: 'Comments',
   LIKES: 'Likes',
+  COMMENT_REACTIONS: 'CommentReactions',
 };
 
 export const KNOWLEDGE_SHEET_HEADERS = {
@@ -31,6 +39,7 @@ export const KNOWLEDGE_SHEET_HEADERS = {
   POST_TAGS: ['postId', 'tagId', 'createdAt'],
   COMMENTS: ['id', 'postId', 'author', 'content', 'postedAt'],
   LIKES: ['clientId', 'postId', 'likedAt'],
+  COMMENT_REACTIONS: ['commentId', 'emoji', 'clientId', 'reactedAt'],
 };
 
 const CACHE_KEY_LIST = 'knowledge_list_cache';
@@ -45,6 +54,7 @@ type SheetMap = {
   postTags: GoogleAppsScript.Spreadsheet.Sheet;
   comments: GoogleAppsScript.Spreadsheet.Sheet;
   likes: GoogleAppsScript.Spreadsheet.Sheet;
+  commentReactions: GoogleAppsScript.Spreadsheet.Sheet;
 };
 
 interface PostRow {
@@ -76,6 +86,42 @@ export class KnowledgeService {
     }
   }
 
+  private static buildReactionsByComment(
+    sheet: GoogleAppsScript.Spreadsheet.Sheet,
+  ): Map<number, CommentReaction[]> {
+    const rows = this.getSheetValues(sheet);
+    const aggregated = new Map<number, Map<string, { count: number; reactors: Set<string> }>>();
+
+    rows.forEach(row => {
+      const commentId = Number(row[0]);
+      const emoji = (row[1] as string) || '';
+      const clientId = (row[2] as string) || '';
+      if (!commentId || Number.isNaN(commentId) || !emoji) {
+        return;
+      }
+      const forComment = aggregated.get(commentId) || new Map<string, { count: number; reactors: Set<string> }>();
+      const entry = forComment.get(emoji) || { count: 0, reactors: new Set<string>() };
+      entry.count += 1;
+      if (clientId) {
+        entry.reactors.add(clientId);
+      }
+      forComment.set(emoji, entry);
+      aggregated.set(commentId, forComment);
+    });
+
+    const reactionsByComment = new Map<number, CommentReaction[]>();
+    aggregated.forEach((emojiMap, commentId) => {
+      const reactions: CommentReaction[] = Array.from(emojiMap.entries()).map(([emoji, info]) => ({
+        emoji,
+        count: info.count,
+        reactors: Array.from(info.reactors),
+      }));
+      reactionsByComment.set(commentId, reactions);
+    });
+
+    return reactionsByComment;
+  }
+
   private static getSheets(): SheetMap {
     const spreadsheet = SheetService.openSpreadsheet();
 
@@ -104,6 +150,11 @@ export class KnowledgeService {
       likes: SheetService.getOrCreateSheet(
         KNOWLEDGE_SHEET_NAMES.LIKES,
         KNOWLEDGE_SHEET_HEADERS.LIKES,
+        spreadsheet,
+      ),
+      commentReactions: SheetService.getOrCreateSheet(
+        KNOWLEDGE_SHEET_NAMES.COMMENT_REACTIONS,
+        KNOWLEDGE_SHEET_HEADERS.COMMENT_REACTIONS,
         spreadsheet,
       ),
     };
@@ -242,6 +293,7 @@ export class KnowledgeService {
 
   private static buildCommentsByPost(
     sheet: GoogleAppsScript.Spreadsheet.Sheet,
+    reactionsByComment: Map<number, CommentReaction[]>,
   ): Map<number, Comment[]> {
     const rows = this.getSheetValues(sheet);
     const comments = new Map<number, Comment[]>();
@@ -261,6 +313,7 @@ export class KnowledgeService {
         text: content,
         author,
         postedAt,
+        reactions: reactionsByComment.get(id) || [],
       };
 
       const current = comments.get(postId) || [];
@@ -416,7 +469,8 @@ export class KnowledgeService {
     const tagRecords = this.loadTagRecords(sheets.tags);
     const tagMap = this.buildTagMap(tagRecords);
     const tagsByPost = this.buildTagsByPost(sheets.postTags, tagMap);
-    const commentsByPost = this.buildCommentsByPost(sheets.comments);
+    const reactionsByComment = this.buildReactionsByComment(sheets.commentReactions);
+    const commentsByPost = this.buildCommentsByPost(sheets.comments, reactionsByComment);
 
     return posts.map(post =>
       this.buildKnowledgeObject(
@@ -740,6 +794,59 @@ export class KnowledgeService {
     } catch (error) {
       console.error('Error adding like:', error);
       return 0;
+    }
+  }
+
+  private static buildCommentReactionsForId(
+    commentId: number,
+    sheet: GoogleAppsScript.Spreadsheet.Sheet,
+  ): CommentReaction[] {
+    const reactionsByComment = this.buildReactionsByComment(sheet);
+    return reactionsByComment.get(commentId) || [];
+  }
+
+  static toggleCommentReaction(
+    commentId: number,
+    emoji: string,
+    clientId?: string,
+  ): { success: boolean; reactions?: CommentReaction[]; error?: string } {
+    try {
+      const normalizedEmoji = (emoji || '').trim();
+      if (!commentId || Number.isNaN(Number(commentId))) {
+        return { success: false, error: 'コメントIDが不正です' };
+      }
+      if (!normalizedEmoji) {
+        return { success: false, error: '絵文字が不正です' };
+      }
+
+      const sheets = this.getSheets();
+      const commentRow = this.findRowById(sheets.comments, Number(commentId));
+      if (!commentRow) {
+        return { success: false, error: 'コメントが見つかりません' };
+      }
+      const resolvedClientId = clientId || `anonymous-${Utilities.getUuid()}`;
+
+      const rows = this.getSheetValues(sheets.commentReactions);
+      const existingIndex = rows.findIndex(
+        row =>
+          Number(row[0]) === Number(commentId) &&
+          (row[1] as string) === normalizedEmoji &&
+          (row[2] as string) === resolvedClientId,
+      );
+
+      if (existingIndex >= 0) {
+        // delete existing reaction
+        sheets.commentReactions.deleteRow(existingIndex + 2);
+      } else {
+        sheets.commentReactions.appendRow([commentId, normalizedEmoji, resolvedClientId, new Date()]);
+      }
+
+      const reactions = this.buildCommentReactionsForId(commentId, sheets.commentReactions);
+      this.clearCache();
+      return { success: true, reactions };
+    } catch (error: any) {
+      console.error('Error toggling comment reaction:', error);
+      return { success: false, error: error.toString() };
     }
   }
 }

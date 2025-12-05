@@ -18,6 +18,7 @@ function addComment(id, comment, author) { return global.addComment(id, comment,
 function deleteComment(id, knowledgeId) { return global.deleteComment(id, knowledgeId); }
 function addLike(id) { return global.addLike(id); }
 function testSpreadsheetAccess() { return global.testSpreadsheetAccess(); }
+function toggleCommentReaction(commentId, emoji, clientId) { return global.toggleCommentReaction(commentId, emoji, clientId); }
 `;
 
 const ensureDist = () => {

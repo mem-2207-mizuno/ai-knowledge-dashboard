@@ -9,8 +9,10 @@ import {
   removeCommentById,
   getAllKnowledge,
   setAllKnowledge,
+  updateCommentReactionsInState,
+  getClientId,
 } from '../data/state';
-import { postComment, deleteComment as deleteCommentApi } from '../data/api';
+import { postComment, deleteComment as deleteCommentApi, toggleCommentReaction } from '../data/api';
 import { renderReadonlyMarkdown } from './editors';
 import { CATEGORY_FORM_CONFIGS } from '../data/constants';
 import { showNotification } from '../system/notifications';
@@ -20,6 +22,120 @@ const MODAL_LIKE_BUTTON_PREFIX = 'modal-like-btn-';
 const PANEL_LIKE_BUTTON_PREFIX = 'panel-like-btn-';
 type DetailMode = 'modal' | 'panel';
 let currentDetailMode: DetailMode = 'modal';
+const QUICK_REACTIONS = ['👍', '😂', '🎉', '❤️', '🙏', '👀', '😮', '😢', '🔥'];
+let emojiPickerContainer: HTMLElement | null = null;
+let activeReactionTarget: { knowledgeId: number; commentId: number } | null = null;
+
+function unifiedToNative(unified?: string): string {
+  if (!unified) return '';
+  try {
+    return unified
+      .split('-')
+      .map(code => String.fromCodePoint(parseInt(code, 16)))
+      .join('');
+  } catch (error) {
+    console.warn('Failed to convert unified emoji', unified, error);
+    return '';
+  }
+}
+
+function normalizeReactions(reactions: any[]): any[] {
+  const clientId = getClientId();
+  return Array.isArray(reactions)
+    ? reactions.map(reaction => ({
+        ...reaction,
+        reactedByMe: Array.isArray(reaction.reactors)
+          ? reaction.reactors.includes(clientId)
+          : reaction.reactedByMe === true,
+      }))
+    : [];
+}
+
+function ensureEmojiPicker() {
+  if (emojiPickerContainer && emojiPickerElement) {
+    return;
+  }
+  emojiPickerContainer = document.createElement('div');
+  emojiPickerContainer.id = 'commentEmojiPickerContainer';
+  emojiPickerContainer.style.position = 'absolute';
+  emojiPickerContainer.style.zIndex = '1200';
+  emojiPickerContainer.style.display = 'none';
+  emojiPickerContainer.style.boxShadow = '0 12px 30px rgba(0,0,0,0.18)';
+
+  const picker = document.createElement('em-emoji-picker');
+  picker.setAttribute('id', 'commentEmojiPicker');
+  picker.setAttribute('theme', 'light');
+  picker.addEventListener('emoji-click', (event: any) => {
+    const detail = event?.detail;
+    const unified = detail?.unified || detail?.emoji?.unified || detail?.emoji?.hexcode;
+    const emoji =
+      detail?.native ||
+      detail?.unicode ||
+      unifiedToNative(unified) ||
+      detail?.emoji?.native ||
+      detail?.emoji?.name ||
+      '';
+    if (!emoji || !activeReactionTarget) {
+      return;
+    }
+    toggleCommentReactionUI(
+      activeReactionTarget.knowledgeId,
+      activeReactionTarget.commentId,
+      emoji,
+      true,
+    );
+    hideEmojiPicker();
+  });
+
+  emojiPickerContainer.appendChild(picker);
+  document.body.appendChild(emojiPickerContainer);
+
+  document.addEventListener('click', event => {
+    if (!emojiPickerContainer || emojiPickerContainer.style.display === 'none') {
+      return;
+    }
+    const targetEl = event.target as HTMLElement | null;
+    const isTrigger = targetEl?.classList?.contains('reaction-picker-trigger') || targetEl?.closest('.reaction-picker-trigger');
+    if (
+      event.target === emojiPickerContainer ||
+      emojiPickerContainer.contains(event.target as Node) ||
+      isTrigger
+    ) {
+      return;
+    }
+    hideEmojiPicker();
+  });
+}
+
+function showEmojiPicker(trigger: HTMLElement, knowledgeId: number, commentId: number) {
+  ensureEmojiPicker();
+  activeReactionTarget = { knowledgeId, commentId };
+  if (!emojiPickerContainer) {
+    return;
+  }
+  const rect = trigger.getBoundingClientRect();
+  emojiPickerContainer.style.left = `${rect.left + window.scrollX}px`;
+  emojiPickerContainer.style.top = `${rect.bottom + window.scrollY + 8}px`;
+  emojiPickerContainer.style.display = 'block';
+}
+
+function hideEmojiPicker() {
+  if (emojiPickerContainer) {
+    emojiPickerContainer.style.display = 'none';
+  }
+  activeReactionTarget = null;
+}
+
+function normalizeKnowledgeReactions(knowledge: any): any {
+  if (!knowledge || !Array.isArray(knowledge.comments)) {
+    return knowledge;
+  }
+  knowledge.comments = knowledge.comments.map((comment: any) => ({
+    ...comment,
+    reactions: normalizeReactions(comment.reactions || []),
+  }));
+  return knowledge;
+}
 
 function clearModalContent() {
   const modalBody = document.getElementById('modalBody');
@@ -101,6 +217,37 @@ function renderComments(comments: any[] = [], knowledgeId: number): string {
           : new Date(comment.postedAt)
         : new Date();
       const canDelete = !!comment.id;
+      const reactions = Array.isArray(comment.reactions) ? comment.reactions : [];
+      const reactionChips = reactions
+        .sort((a: any, b: any) => b.count - a.count)
+        .map(
+          (reaction: any) => `
+          <button
+            class="reaction-chip ${reaction.reactedByMe ? 'active' : ''}"
+            onclick="toggleCommentReactionUI(${knowledgeId}, ${comment.id}, '${reaction.emoji}')"
+            title="${reaction.emoji} を取り消す/追加する"
+          >
+            <span class="reaction-emoji">${reaction.emoji}</span>
+            <span class="reaction-count">${reaction.count}</span>
+          </button>
+        `,
+        )
+        .join('');
+      const quickBar = QUICK_REACTIONS.map(
+        emoji => `
+          <button
+            class="reaction-quick-btn"
+            onclick="toggleCommentReactionUI(${knowledgeId}, ${comment.id}, '${emoji}')"
+            title="${emoji} を付ける"
+          >${emoji}</button>
+        `,
+      ).join('');
+      const pickerIcon = `
+        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+          <path fill="none" d="M0 0h24v24H0z"></path>
+          <path d="M7 9.5C7 8.67 7.67 8 8.5 8s1.5.67 1.5 1.5S9.33 11 8.5 11 7 10.33 7 9.5m5 8c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5m3.5-6.5c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5M22 1h-2v2h-2v2h2v2h2V5h2V3h-2zm-2 11c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8c1.46 0 2.82.4 4 1.08V2.84A9.9 9.9 0 0 0 11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12c0-1.05-.17-2.05-.47-3H19.4c.38.93.6 1.94.6 3"></path>
+        </svg>
+      `;
       return `
         <div class="comment-card" ${comment.pending ? 'data-pending="true"' : ''}>
           <div class="comment-card-header">
@@ -117,6 +264,23 @@ function renderComments(comments: any[] = [], knowledgeId: number): string {
             }
           </div>
           <div class="comment-card-body">${renderMarkdown(comment.text || '')}</div>
+          <div class="comment-reaction-row">
+            <div class="reaction-chip-list">
+              ${reactionChips || '<span class="reaction-empty">リアクションはまだありません</span>'}
+            </div>
+            <div class="reaction-actions">
+              <div class="reaction-quick-box">
+                <div class="reaction-quick-bar">
+                  ${quickBar}
+                </div>
+                <button
+                  class="reaction-picker-trigger"
+                  onclick="openCommentReactionPicker(${knowledgeId}, ${comment.id}, event)"
+                  title="その他の絵文字を追加"
+                >${pickerIcon}</button>
+              </div>
+            </div>
+          </div>
         </div>
       `;
     })
@@ -134,6 +298,73 @@ export function refreshCommentsUI(knowledgeId: number) {
   }
   const comments = Array.isArray(knowledge.comments) ? knowledge.comments : [];
   commentsList.innerHTML = renderComments(comments, knowledgeId);
+}
+
+function applyReactionResult(
+  knowledgeId: number,
+  commentId: number,
+  reactions: any[],
+  message?: string,
+) {
+  updateCommentReactionsInState(knowledgeId, commentId, normalizeReactions(reactions));
+  refreshCommentsUI(knowledgeId);
+  if (message) {
+    showNotification(message, { type: 'success' });
+  }
+}
+
+export function toggleCommentReactionUI(
+  knowledgeId: number,
+  commentId: number,
+  emoji: string,
+  skipNotification?: boolean,
+) {
+  if (!commentId || !emoji) {
+    return;
+  }
+  const clientId = getClientId();
+  toggleCommentReaction(
+    commentId,
+    emoji,
+    clientId,
+    result => {
+      let parsed = result as any;
+      if (typeof result === 'string') {
+        try {
+          parsed = JSON.parse(result);
+        } catch (error) {
+          console.error('Failed to parse reaction response', error);
+        }
+      }
+      if (parsed?.success) {
+        applyReactionResult(
+          knowledgeId,
+          commentId,
+          parsed.reactions || [],
+          skipNotification ? undefined : 'リアクションを更新しました',
+        );
+      } else {
+        showNotification(parsed?.error || 'リアクションの更新に失敗しました', { type: 'error' });
+      }
+    },
+    error => {
+      console.error('Failed to toggle reaction', error);
+      showNotification('リアクションの更新に失敗しました', { type: 'error' });
+    },
+  );
+}
+
+export function openCommentReactionPicker(
+  knowledgeId: number,
+  commentId: number,
+  event: Event,
+) {
+  const trigger = event?.currentTarget as HTMLElement | null;
+  if (!trigger) {
+    return;
+  }
+  event.stopPropagation();
+  showEmojiPicker(trigger, knowledgeId, commentId);
 }
 
 export function updateLikeDisplay(knowledgeId: number, likes: number, pending = false) {
@@ -164,6 +395,7 @@ export function updateLikeDisplay(knowledgeId: number, likes: number, pending = 
 }
 
 function renderDetailBodyHtml(knowledge: any, mode: DetailMode): string {
+  knowledge = normalizeKnowledgeReactions(knowledge);
   const date = knowledge.postedAt
     ? typeof knowledge.postedAt === 'string'
       ? new Date(knowledge.postedAt)

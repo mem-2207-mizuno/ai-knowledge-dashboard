@@ -81,8 +81,8 @@ export function submitKnowledge(
       (document.getElementById('addThrowed') as HTMLInputElement | null)?.checked === true,
   };
 
-  if (!knowledge.title || !knowledge.url || !knowledge.postedBy) {
-    safeCallbacks.onError('タイトル、URL、投稿者は必須項目です');
+  if (!knowledge.title || !knowledge.postedBy) {
+    safeCallbacks.onError('タイトル、投稿者は必須項目です');
     return;
   }
 
@@ -206,8 +206,8 @@ export function submitUpdate(
     metadata: editMetadata,
   };
 
-  if (!knowledge.title || !knowledge.url || !knowledge.postedBy) {
-    callbacks.onError('タイトル、URL、投稿者は必須項目です');
+  if (!knowledge.title || !knowledge.postedBy) {
+    callbacks.onError('タイトル、投稿者は必須項目です');
     return;
   }
 

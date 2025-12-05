@@ -29,7 +29,7 @@ function createMetadataFieldMarkup(
   mode: MetadataMode,
 ): string {
   const containerId = `${mode}-meta-${field.key}`;
-  const requiredAttr = field.required ? 'required' : '';
+  const requiredAttr = ''; // 全フィールド任意入力にする
   const placeholderAttr = field.placeholder ? `placeholder="${escapeHtml(field.placeholder)}"` : '';
   const helper = field.helperText
     ? `<div class="property-helper">${escapeHtml(field.helperText)}</div>`
@@ -71,7 +71,7 @@ function createMetadataFieldMarkup(
 
   return `
         <div class="property-row metadata-row">
-          <div class="property-label">${field.label}${field.required ? ' *' : ''}</div>
+          <div class="property-label">${field.label}</div>
           <div class="property-control">
             ${inputHtml}
             ${helper}

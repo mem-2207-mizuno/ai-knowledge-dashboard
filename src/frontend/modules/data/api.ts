@@ -84,3 +84,16 @@ export function postLike(
     .withFailureHandler(onFailure)
     .addLike(knowledgeId, clientId);
 }
+
+export function toggleCommentReaction(
+  commentId: number,
+  emoji: string,
+  clientId: string,
+  onSuccess: SuccessHandler<any>,
+  onFailure: FailureHandler,
+) {
+  google.script.run
+    .withSuccessHandler(onSuccess)
+    .withFailureHandler(onFailure)
+    .toggleCommentReaction(commentId, emoji, clientId);
+}
