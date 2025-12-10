@@ -57,7 +57,6 @@ function renderBlockNote(
       slashMenu={options?.readOnly ? false : undefined}
       emojiPicker={options?.readOnly ? false : undefined}
       sideMenu={options?.readOnly ? false : undefined}
-      filePanel={false}
       tableHandles={options?.readOnly ? false : undefined}
       theme="light"
     />,

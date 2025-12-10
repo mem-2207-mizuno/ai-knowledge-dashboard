@@ -7,7 +7,7 @@
     "push": "bun run build && clasp push",
     "pull": "clasp pull",
     "open": "clasp open",
-    "deploy": "bun run build && clasp deploy",
+    "deploy": "clasp deploy --deploymentId AKfycbycBOFwbpqQRuKV3V_wbZKhrf8GugRCpglvXrNQuni4DGMu_crtJrTa_oFv6qgu2G1_",
     "build": "bun run build.ts",
     "lint": "eslint \"src/**/*.{ts,tsx}\" --max-warnings=0",
     "lint:fix": "bun run lint -- --fix",
