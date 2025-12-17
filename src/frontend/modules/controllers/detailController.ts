@@ -1,4 +1,3 @@
-import { getAllKnowledge } from '../data/state';
 import { fetchKnowledgeDetail } from '../data/api';
 import {
   displayDetail as displayDetailModal,
@@ -105,7 +104,11 @@ export function showDetail(id: any, options?: boolean | ShowDetailOptions) {
   );
 }
 
-function displayDetailSafe(knowledge: any, showError: (error: any) => void, mode: 'modal' | 'panel') {
+function displayDetailSafe(
+  knowledge: any,
+  showError: (error: any) => void,
+  mode: 'modal' | 'panel',
+) {
   try {
     displayDetailModal(knowledge, mode);
   } catch (error) {
@@ -150,14 +153,14 @@ export function submitComment(knowledgeId: number) {
   const { showError } = requireOptions();
   submitCommentAction(knowledgeId, {
     onSuccess: () => {
-        loadKnowledge(
-          knowledgeId,
-          {
-            showDetail,
-            showError,
-          },
-          { mode: currentViewModeFromUrl() },
-        );
+      loadKnowledge(
+        knowledgeId,
+        {
+          showDetail,
+          showError,
+        },
+        { mode: currentViewModeFromUrl() },
+      );
     },
     onError: message => showError(message),
     onUpdate: () => {
@@ -184,14 +187,19 @@ export function deleteComment(knowledgeId: number, commentId: number) {
   });
 }
 
-export function archiveKnowledge(knowledgeId: number, nextStatus: 'archived' | 'open' = 'archived') {
+export function archiveKnowledge(
+  knowledgeId: number,
+  nextStatus: 'archived' | 'open' = 'archived',
+) {
   const { showError } = requireOptions();
   const knowledge = findKnowledgeById(knowledgeId);
   if (!knowledge) {
     showError('ナレッジが見つかりませんでした');
     return;
   }
-  const archiveButton = document.getElementById(`archive-btn-${knowledgeId}`) as HTMLButtonElement | null;
+  const archiveButton = document.getElementById(
+    `archive-btn-${knowledgeId}`,
+  ) as HTMLButtonElement | null;
   if (archiveButton) {
     archiveButton.disabled = true;
   }

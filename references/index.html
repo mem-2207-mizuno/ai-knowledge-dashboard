@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Knowledge Dashboard</title>
+  <!-- Markdownパーサー -->
+  <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+  <!-- Material Icons -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
+  <!-- BlockNote styles -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@blocknote/core@0.42.3/style.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@blocknote/mantine@0.42.3/style.css" />
+  <?!= include('styles_base'); ?>
+</head>
+
+<body>
+  <!-- サーバーサイドからの初期データをグローバル変数として定義 -->
+  <script type="application/json" id="server-data">
+      <?!= serverData ?>
+    </script>
+  <script>
+    const serverDataElement = document.getElementById('server-data');
+    let parsedServerData = {
+      initialData: [],
+      referenceData: {},
+      initialId: null,
+      initialView: 'modal',
+      appUrl: '',
+    };
+    if (serverDataElement && serverDataElement.textContent) {
+      try {
+        parsedServerData = JSON.parse(serverDataElement.textContent);
+      } catch (error) {
+        console.error('Failed to parse server data', error);
+      }
+    }
+    const SERVER_DATA = parsedServerData;
+    window.SERVER_DATA = SERVER_DATA;
+  </script>
+
+  <div id="notificationStack" class="notification-stack" aria-live="polite"></div>
+  <div class="layout">
+    <?!= include('partials_sidebar'); ?>
+    <?!= include('partials_main'); ?>
+  </div>
+
+  <?!= include('partials_modals'); ?>
+  <?!= include('scripts_bundle'); ?>
+</body>
+
+</html>

@@ -97,3 +97,28 @@ export function toggleCommentReaction(
     .withFailureHandler(onFailure)
     .toggleCommentReaction(commentId, emoji, clientId);
 }
+
+export function uploadKnowledgeImage(payload: {
+  dataUrl: string;
+  filename?: string;
+}): Promise<string> {
+  return new Promise((resolve, reject) => {
+    google.script.run
+      .withSuccessHandler((result: any) =>
+        resolve(typeof result === 'string' ? result : String(result)),
+      )
+      .withFailureHandler((error: any) => reject(error))
+      .uploadKnowledgeImage(payload);
+  });
+}
+
+export function getKnowledgeImageData(
+  fileId: string,
+): Promise<{ mimeType: string; base64: string }> {
+  return new Promise((resolve, reject) => {
+    google.script.run
+      .withSuccessHandler((result: any) => resolve(result))
+      .withFailureHandler((error: any) => reject(error))
+      .getKnowledgeImageData(fileId);
+  });
+}

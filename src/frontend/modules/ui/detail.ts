@@ -16,6 +16,8 @@ import { postComment, deleteComment as deleteCommentApi, toggleCommentReaction }
 import { renderReadonlyMarkdown } from './editors';
 import { CATEGORY_FORM_CONFIGS } from '../data/constants';
 import { showNotification } from '../system/notifications';
+import { Picker } from 'emoji-mart';
+import emojiData from '@emoji-mart/data';
 
 const LIKES_BUTTON_PREFIX = 'like-btn-';
 const MODAL_LIKE_BUTTON_PREFIX = 'modal-like-btn-';
@@ -24,6 +26,9 @@ type DetailMode = 'modal' | 'panel';
 let currentDetailMode: DetailMode = 'modal';
 const QUICK_REACTIONS = ['👍', '😂', '🎉', '❤️', '🙏', '👀', '😮', '😢', '🔥'];
 let emojiPickerContainer: HTMLElement | null = null;
+let emojiPickerElement: HTMLElement | null = null;
+let emojiMartPicker: any | null = null;
+let outsideClickHandlerRegistered = false;
 let activeReactionTarget: { knowledgeId: number; commentId: number } | null = null;
 
 function unifiedToNative(unified?: string): string {
@@ -51,6 +56,41 @@ function normalizeReactions(reactions: any[]): any[] {
     : [];
 }
 
+function registerOutsideClickHandler() {
+  if (outsideClickHandlerRegistered) {
+    return;
+  }
+  outsideClickHandlerRegistered = true;
+
+  document.addEventListener('click', event => {
+    if (!emojiPickerContainer || emojiPickerContainer.style.display === 'none') {
+      return;
+    }
+    const targetEl = event.target as HTMLElement | null;
+    const isTrigger =
+      targetEl?.classList?.contains('reaction-picker-trigger') ||
+      Boolean(targetEl?.closest('.reaction-picker-trigger'));
+
+    if (emojiPickerContainer.contains(event.target as Node) || isTrigger) {
+      return;
+    }
+    hideEmojiPicker();
+  });
+}
+
+function getNativeEmoji(payload: any): string {
+  if (!payload) return '';
+  return (
+    payload.native ||
+    payload.unicode ||
+    payload.emoji?.native ||
+    payload.emoji?.unicode ||
+    payload.skins?.[0]?.native ||
+    unifiedToNative(payload.unified || payload.emoji?.unified || payload.emoji?.hexcode) ||
+    ''
+  );
+}
+
 function ensureEmojiPicker() {
   if (emojiPickerContainer && emojiPickerElement) {
     return;
@@ -62,19 +102,8 @@ function ensureEmojiPicker() {
   emojiPickerContainer.style.display = 'none';
   emojiPickerContainer.style.boxShadow = '0 12px 30px rgba(0,0,0,0.18)';
 
-  const picker = document.createElement('em-emoji-picker');
-  picker.setAttribute('id', 'commentEmojiPicker');
-  picker.setAttribute('theme', 'light');
-  picker.addEventListener('emoji-click', (event: any) => {
-    const detail = event?.detail;
-    const unified = detail?.unified || detail?.emoji?.unified || detail?.emoji?.hexcode;
-    const emoji =
-      detail?.native ||
-      detail?.unicode ||
-      unifiedToNative(unified) ||
-      detail?.emoji?.native ||
-      detail?.emoji?.name ||
-      '';
+  const handleSelect = (payload: any) => {
+    const emoji = getNativeEmoji(payload);
     if (!emoji || !activeReactionTarget) {
       return;
     }
@@ -85,26 +114,26 @@ function ensureEmojiPicker() {
       true,
     );
     hideEmojiPicker();
-  });
+  };
 
-  emojiPickerContainer.appendChild(picker);
+  try {
+    emojiMartPicker = new (Picker as any)({
+      data: emojiData as any,
+      theme: 'light',
+      previewPosition: 'none',
+      onEmojiSelect: handleSelect,
+    });
+    emojiPickerElement = emojiMartPicker as any;
+    if (emojiPickerElement) {
+      (emojiPickerElement as any).id = 'commentEmojiPicker';
+      emojiPickerContainer.appendChild(emojiPickerElement);
+    }
+  } catch (error) {
+    console.error('Failed to create emoji-mart Picker', error);
+  }
+
   document.body.appendChild(emojiPickerContainer);
-
-  document.addEventListener('click', event => {
-    if (!emojiPickerContainer || emojiPickerContainer.style.display === 'none') {
-      return;
-    }
-    const targetEl = event.target as HTMLElement | null;
-    const isTrigger = targetEl?.classList?.contains('reaction-picker-trigger') || targetEl?.closest('.reaction-picker-trigger');
-    if (
-      event.target === emojiPickerContainer ||
-      emojiPickerContainer.contains(event.target as Node) ||
-      isTrigger
-    ) {
-      return;
-    }
-    hideEmojiPicker();
-  });
+  registerOutsideClickHandler();
 }
 
 function showEmojiPicker(trigger: HTMLElement, knowledgeId: number, commentId: number) {
@@ -354,11 +383,7 @@ export function toggleCommentReactionUI(
   );
 }
 
-export function openCommentReactionPicker(
-  knowledgeId: number,
-  commentId: number,
-  event: Event,
-) {
+export function openCommentReactionPicker(knowledgeId: number, commentId: number, event: Event) {
   const trigger = event?.currentTarget as HTMLElement | null;
   if (!trigger) {
     return;
@@ -797,7 +822,7 @@ export function addLike(
     options.onError('ナレッジが見つかりませんでした');
     return;
   }
-  const liked = toggleKnowledgeLiked(knowledgeId);
+  toggleKnowledgeLiked(knowledgeId);
   knowledge.likePending = false;
   updateLikeDisplay(knowledgeId, knowledge.likes || 0, false);
   options.onUpdate?.();

@@ -1,6 +1,8 @@
 import { BlockNoteEditor, PartialBlock } from '@blocknote/core';
 import { BlockNoteView } from '@blocknote/mantine';
 import { createRoot, Root } from 'react-dom/client';
+import { getKnowledgeImageData, uploadKnowledgeImage } from '../data/api';
+import { showNotification } from '../system/notifications';
 
 export type EditorMode = 'add' | 'edit';
 
@@ -19,9 +21,104 @@ type ViewerInstance = {
 const editors: Partial<Record<EditorMode, EditorInstance>> = {};
 const viewers: Record<string, ViewerInstance> = {};
 
+function tryParseBlocksJson(input: string): PartialBlock[] | null {
+  const trimmed = (input || '').trim();
+  if (!trimmed) return null;
+  const looksLikeJson = trimmed.startsWith('[') || trimmed.startsWith('{');
+  if (!looksLikeJson) return null;
+  try {
+    const parsed = JSON.parse(trimmed);
+    const blocks = Array.isArray(parsed) ? parsed : parsed?.blocks;
+    if (!Array.isArray(blocks) || blocks.length === 0) return null;
+    const first = blocks[0];
+    if (!first || typeof first !== 'object' || typeof (first as any).type !== 'string') return null;
+    return blocks as PartialBlock[];
+  } catch {
+    return null;
+  }
+}
+
+function extractDriveFileId(url: unknown): string | null {
+  if (typeof url !== 'string') return null;
+  const trimmed = url.trim();
+  if (!trimmed) return null;
+  if (trimmed.startsWith('data:')) return null;
+  // 旧: ?img=<fileId>
+  const imgMatch = trimmed.match(/[?&]img=([^&]+)/);
+  if (imgMatch?.[1]) return imgMatch[1];
+  // Drive: uc?export=view&id=<fileId>
+  const idMatch = trimmed.match(/[?&]id=([^&]+)/);
+  if (idMatch?.[1] && trimmed.includes('drive.google.com')) return idMatch[1];
+  return null;
+}
+
+function replaceImageUrlsWithDataUrl(
+  blocks: PartialBlock[],
+  byId: Record<string, string>,
+): PartialBlock[] {
+  const walk = (items: any[]): any[] =>
+    items.map(block => {
+      if (!block || typeof block !== 'object') return block;
+      const next = { ...block };
+      if (next.type === 'image' && next.props && typeof next.props === 'object') {
+        const fileId = extractDriveFileId(next.props.url);
+        if (fileId && byId[fileId]) {
+          next.props = { ...next.props, url: byId[fileId] };
+        }
+      }
+      if (Array.isArray(next.children) && next.children.length > 0) {
+        next.children = walk(next.children);
+      }
+      return next;
+    });
+  return walk(blocks as any) as PartialBlock[];
+}
+
+async function hydratePrivateDriveImages(editor: BlockNoteEditor) {
+  // editor.document はBlock配列
+  const blocks = editor.document as unknown as PartialBlock[];
+  const ids = new Set<string>();
+  const collect = (items: any[]) => {
+    items.forEach(block => {
+      if (!block || typeof block !== 'object') return;
+      if (block.type === 'image' && block.props) {
+        const fileId = extractDriveFileId(block.props.url);
+        if (fileId) ids.add(fileId);
+      }
+      if (Array.isArray(block.children) && block.children.length > 0) {
+        collect(block.children);
+      }
+    });
+  };
+  collect(blocks as any);
+  if (ids.size === 0) return;
+
+  const byId: Record<string, string> = {};
+  await Promise.all(
+    Array.from(ids).map(async fileId => {
+      try {
+        const { mimeType, base64 } = await getKnowledgeImageData(fileId);
+        if (mimeType && base64) {
+          byId[fileId] = `data:${mimeType};base64,${base64}`;
+        }
+      } catch (error) {
+        console.warn('Failed to hydrate image from Drive:', fileId, error);
+      }
+    }),
+  );
+  if (Object.keys(byId).length === 0) return;
+
+  const nextBlocks = replaceImageUrlsWithDataUrl(blocks, byId);
+  editor.replaceBlocks(editor.document, nextBlocks);
+}
+
 function toBlocks(editor: BlockNoteEditor, markdown: string): PartialBlock[] {
   try {
     const normalized = (markdown || '').trim();
+    const jsonBlocks = tryParseBlocksJson(normalized);
+    if (jsonBlocks) {
+      return jsonBlocks;
+    }
     const parsed = normalized ? editor.tryParseMarkdownToBlocks(normalized) : [];
     if (parsed && parsed.length > 0) {
       return parsed;
@@ -35,6 +132,8 @@ function toBlocks(editor: BlockNoteEditor, markdown: string): PartialBlock[] {
 function setEditorContent(editor: BlockNoteEditor, markdown: string) {
   const nextBlocks = toBlocks(editor, markdown);
   editor.replaceBlocks(editor.document, nextBlocks);
+  // Driveリンク(403)の画像をdataURLに差し替えて表示を安定させる
+  void hydratePrivateDriveImages(editor);
 }
 
 function renderBlockNote(
@@ -42,8 +141,38 @@ function renderBlockNote(
   markdown: string,
   options?: { readOnly?: boolean },
 ): { root: Root; editor: BlockNoteEditor; container: HTMLElement } {
+  const fileToDataUrl = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ''));
+      reader.onerror = () => reject(reader.error || new Error('FileReader error'));
+      reader.readAsDataURL(file);
+    });
+
   const editor = BlockNoteEditor.create({
     defaultStyles: true,
+    uploadFile: options?.readOnly
+      ? undefined
+      : async (file: File) => {
+          const maxBytes = 5 * 1024 * 1024;
+          if (file.size > maxBytes) {
+            showNotification('画像サイズが大きすぎます（最大 5MB）', { type: 'error' });
+            throw new Error('Image size exceeded (max 5MB)');
+          }
+          try {
+            const dataUrl = await fileToDataUrl(file);
+            const url = await uploadKnowledgeImage({ dataUrl, filename: file.name });
+            return url;
+          } catch (error: any) {
+            console.error('Failed to upload image:', error);
+            showNotification(
+              error?.message ||
+                '画像のアップロードに失敗しました（権限/容量/設定を確認してください）',
+              { type: 'error' },
+            );
+            throw error;
+          }
+        },
   });
   setEditorContent(editor, markdown);
 

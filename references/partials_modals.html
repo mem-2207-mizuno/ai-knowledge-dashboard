@@ -1,0 +1,167 @@
+<!-- 詳細モーダル -->
+<div id="detailModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2 id="modalTitle">ナレッジ詳細</h2>
+      <div class="modal-actions">
+        <div id="modalActions"></div>
+        <button class="close-button" onclick="closeModal()" aria-label="閉じる">&times;</button>
+      </div>
+    </div>
+    <div id="modalBody">
+      <!-- 詳細内容がここに表示されます -->
+    </div>
+  </div>
+</div>
+
+<!-- 追加モーダル -->
+<div id="addModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>ナレッジを追加</h2>
+      <button class="close-button" onclick="closeAddModal()">&times;</button>
+    </div>
+    <div id="addModalBody" style="padding-top: 20px">
+      <form id="addKnowledgeForm" onsubmit="submitKnowledge(event)">
+        <div class="notion-form">
+          <input type="text" id="addTitle" class="notion-title-input" placeholder="タイトルを入力" required />
+
+          <div class="notion-property-list">
+            <div class="property-row">
+              <div class="property-label">カテゴリ</div>
+              <div class="property-control">
+                <select id="addCategory"></select>
+              </div>
+            </div>
+            <div class="property-row">
+              <div class="property-label">参照URL</div>
+              <div class="property-control">
+                <input type="url" id="addUrl" placeholder="https://example.com/article" />
+              </div>
+            </div>
+            <div class="property-row">
+              <div class="property-label">タグ</div>
+              <div class="property-control">
+                <div class="tag-input-control">
+                  <div id="addTagChips" class="tag-chip-container"></div>
+                  <input type="text" id="addTagInput" list="tagSuggestionsList" class="tag-input-field"
+                    placeholder="Enter で追加 / 既存タグから選択" />
+                </div>
+                <div class="property-helper">
+                  Enter もしくはカンマで確定。新規タグもそのまま登録できます。
+                </div>
+              </div>
+            </div>
+            <div class="property-row">
+              <div class="property-label">投稿者</div>
+              <div class="property-control">
+                <input type="text" id="addPostedBy" placeholder="投稿者名" required />
+              </div>
+            </div>
+            <div class="property-row">
+              <div class="property-label">サムネイルURL</div>
+              <div class="property-control">
+                <input type="url" id="addThumbnailUrl" placeholder="https://example.com/image.jpg" />
+              </div>
+            </div>
+            <div id="addMetadataSeparator" class="property-separator" style="display: none"></div>
+            <div id="addMetadataFields"></div>
+          </div>
+
+          <div class="property-separator"></div>
+          <div class="notion-editor-block">
+            <div class="notion-editor-heading">本文</div>
+            <div id="addComment" class="blocknote-shell"></div>
+            <!-- <div class="property-helper">Notionライクなブロックエディタです。/ でコマンドを呼び出せます。</div> -->
+          </div>
+        </div>
+
+        <div class="modal-form-footer">
+          <label for="addThrowed" class="footer-checkbox">
+            <input type="checkbox" id="addThrowed" />
+            チャットに投稿しない
+          </label>
+          <div class="modal-form-footer-actions">
+            <button type="button" onclick="closeAddModal()" class="ghost-button">キャンセル</button>
+            <button type="submit" class="primary-button">追加</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- 編集モーダル -->
+<div id="editModal" class="modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>ナレッジを編集</h2>
+      <button class="close-button" onclick="closeEditModal()">&times;</button>
+    </div>
+    <div id="editModalBody" style="padding: 20px 0">
+      <form id="editKnowledgeForm" onsubmit="submitUpdate(event)">
+        <input type="hidden" id="editKnowledgeId" />
+
+        <div class="notion-form">
+          <input type="text" id="editTitle" class="notion-title-input" placeholder="タイトルを入力" required />
+
+          <div class="notion-property-list">
+            <div class="property-row">
+              <div class="property-label">カテゴリ</div>
+              <div class="property-control">
+                <select id="editCategory"></select>
+              </div>
+            </div>
+            <div class="property-row">
+              <div class="property-label">参照URL</div>
+              <div class="property-control">
+                <input type="url" id="editUrl" placeholder="https://example.com/article" />
+              </div>
+            </div>
+            <div class="property-row">
+              <div class="property-label">タグ</div>
+              <div class="property-control">
+                <div class="tag-input-control">
+                  <div id="editTagChips" class="tag-chip-container"></div>
+                  <input type="text" id="editTagInput" list="tagSuggestionsList" class="tag-input-field"
+                    placeholder="Enter で追加 / 既存タグから選択" />
+                </div>
+                <div class="property-helper">
+                  Enter もしくはカンマで確定。新規タグもそのまま登録できます。
+                </div>
+              </div>
+            </div>
+            <div class="property-row">
+              <div class="property-label">投稿者</div>
+              <div class="property-control">
+                <input type="text" id="editPostedBy" placeholder="投稿者名" required />
+              </div>
+            </div>
+            <div class="property-row">
+              <div class="property-label">サムネイルURL</div>
+              <div class="property-control">
+                <input type="url" id="editThumbnailUrl" placeholder="https://example.com/image.jpg" />
+              </div>
+            </div>
+            <div id="editMetadataSeparator" class="property-separator" style="display: none"></div>
+            <div id="editMetadataFields"></div>
+          </div>
+
+          <div class="property-separator"></div>
+          <div class="notion-editor-block">
+            <div class="notion-editor-heading">本文</div>
+            <div id="editComment" class="blocknote-shell"></div>
+            <!-- <div class="property-helper">Notionライクなブロックエディタです。/ でコマンドを呼び出せます。</div> -->
+          </div>
+        </div>
+
+        <div class="modal-form-footer">
+          <button type="button" onclick="closeEditModal()" class="ghost-button">キャンセル</button>
+          <button type="submit" class="primary-button">更新</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<datalist id="tagSuggestionsList"></datalist>

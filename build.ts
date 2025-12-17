@@ -19,6 +19,10 @@ function deleteComment(id, knowledgeId) { return global.deleteComment(id, knowle
 function addLike(id) { return global.addLike(id); }
 function testSpreadsheetAccess() { return global.testSpreadsheetAccess(); }
 function toggleCommentReaction(commentId, emoji, clientId) { return global.toggleCommentReaction(commentId, emoji, clientId); }
+function uploadKnowledgeImage(payload) { return global.uploadKnowledgeImage(payload); }
+function authorizeDrive() { return global.authorizeDrive(); }
+function getKnowledgeImageData(fileId) { return global.getKnowledgeImageData(fileId); }
+function ensureUploadFolder(folderName) { return global.ensureUploadFolder(folderName); }
 `;
 
 const ensureDist = () => {
