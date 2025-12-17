@@ -52,8 +52,89 @@ function stripMarkdownPreview(text: string): string {
   // Bold/italic markers
   result = result.replace(/(\*{1,3}|_{1,3})([^*_]+?)\1/g, '$2');
   // Remove remaining HTML tags and collapse whitespace
-  result = result.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+  result = result
+    .replace(/<[^>]+>/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
   return result;
+}
+
+function extractTextFromBlockNoteBlocks(value: unknown, maxLen = 200): string {
+  if (!value) return '';
+  const blocks = Array.isArray(value) ? value : (value as any)?.blocks;
+  if (!Array.isArray(blocks) || blocks.length === 0) return '';
+
+  const parts: string[] = [];
+  const push = (text: string) => {
+    const trimmed = (text || '').replace(/\s+/g, ' ').trim();
+    if (!trimmed) return;
+    parts.push(trimmed);
+  };
+
+  const walkInline = (content: any) => {
+    if (!content) return;
+    if (typeof content === 'string') {
+      push(content);
+      return;
+    }
+    if (Array.isArray(content)) {
+      content.forEach(item => walkInline(item));
+      return;
+    }
+    if (typeof content === 'object') {
+      if (typeof content.text === 'string') push(content.text);
+      if (Array.isArray(content.content)) walkInline(content.content);
+      return;
+    }
+  };
+
+  const walkBlocks = (items: any[]) => {
+    for (const block of items) {
+      if (!block || typeof block !== 'object') continue;
+      const type = (block as any).type;
+      const props = (block as any).props || {};
+
+      // テキスト系ブロックの中身を優先して拾う
+      if (
+        type === 'paragraph' ||
+        type === 'heading' ||
+        type === 'bulletListItem' ||
+        type === 'numberedListItem'
+      ) {
+        walkInline((block as any).content);
+      }
+
+      // 画像だけの先頭でも、キャプション/ファイル名があれば拾う
+      if (type === 'image') {
+        if (typeof props.caption === 'string') push(props.caption);
+        if (typeof props.name === 'string') push(props.name);
+      }
+
+      if (Array.isArray((block as any).children) && (block as any).children.length > 0) {
+        walkBlocks((block as any).children);
+      }
+
+      if (parts.join(' ').length >= maxLen) {
+        break;
+      }
+    }
+  };
+
+  walkBlocks(blocks);
+  return parts.join(' ').trim();
+}
+
+function stripBlockNoteJsonPreview(text: string): string {
+  const trimmed = (text || '').trim();
+  if (!trimmed) return '';
+  const looksLikeJson = trimmed.startsWith('[') || trimmed.startsWith('{');
+  if (!looksLikeJson) return '';
+  try {
+    const parsed = JSON.parse(trimmed);
+    return extractTextFromBlockNoteBlocks(parsed, 240);
+  } catch {
+    return '';
+  }
 }
 
 export function getCategoryInfo(categoryId?: string) {
@@ -108,7 +189,9 @@ export function createKnowledgeCard(knowledge: KnowledgeRecord): string {
   const dateStr = date.toLocaleDateString('ja-JP');
   const tags = knowledge.tags || [];
   const tagsHtml = tags.map((tag: string) => `<span class="card-tag">${tag}</span>`).join('');
-  const descriptionSource = stripMarkdownPreview(knowledge.comment || '');
+  const rawComment = knowledge.comment || '';
+  const descriptionSource =
+    stripBlockNoteJsonPreview(rawComment) || stripMarkdownPreview(rawComment);
   const description =
     descriptionSource.length > 0
       ? descriptionSource.length > 120
