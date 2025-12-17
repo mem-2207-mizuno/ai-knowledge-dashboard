@@ -4,6 +4,7 @@ import {
   getMarkdownValue,
   setMarkdownValue,
   refreshMarkdownEditor,
+  prepareEditorForSave,
 } from './editors';
 import { commitPendingTagInput, getTags, setTags } from './tagsInput';
 import { collectMetadata, renderMetadataFields } from './metadata';
@@ -62,61 +63,62 @@ export function submitKnowledge(
     onError: callbacks?.onError || ((message: string) => console.error(message)),
   };
   commitPendingTagInput('add');
-  const tags = getTags('add');
-  const metadata = collectMetadata('add');
-  const categorySelect = document.getElementById('addCategory') as HTMLSelectElement | null;
-  const categoryValue = categorySelect ? categorySelect.value : '';
-  const category = (categoryValue || DEFAULT_CATEGORY_VALUE || 'article') as PostCategory;
+  void prepareEditorForSave('add').then(() => {
+    const tags = getTags('add');
+    const metadata = collectMetadata('add');
+    const categorySelect = document.getElementById('addCategory') as HTMLSelectElement | null;
+    const categoryValue = categorySelect ? categorySelect.value : '';
+    const category = (categoryValue || DEFAULT_CATEGORY_VALUE || 'article') as PostCategory;
 
-  const knowledge = {
-    title: (document.getElementById('addTitle') as HTMLInputElement).value.trim(),
-    url: (document.getElementById('addUrl') as HTMLInputElement).value.trim(),
-    comment: getMarkdownValue('add', 'addComment'),
-    tags,
-    postedBy: (document.getElementById('addPostedBy') as HTMLInputElement).value.trim(),
-    thumbnailUrl: (document.getElementById('addThumbnailUrl') as HTMLInputElement).value.trim(),
-    category,
-    metadata,
-    throwed:
-      (document.getElementById('addThrowed') as HTMLInputElement | null)?.checked === true,
-  };
+    const knowledge = {
+      title: (document.getElementById('addTitle') as HTMLInputElement).value.trim(),
+      url: (document.getElementById('addUrl') as HTMLInputElement).value.trim(),
+      comment: getMarkdownValue('add', 'addComment'),
+      tags,
+      postedBy: (document.getElementById('addPostedBy') as HTMLInputElement).value.trim(),
+      thumbnailUrl: (document.getElementById('addThumbnailUrl') as HTMLInputElement).value.trim(),
+      category,
+      metadata,
+      throwed: (document.getElementById('addThrowed') as HTMLInputElement | null)?.checked === true,
+    };
 
-  if (!knowledge.title || !knowledge.postedBy) {
-    safeCallbacks.onError('タイトル、投稿者は必須項目です');
-    return;
-  }
+    if (!knowledge.title || !knowledge.postedBy) {
+      safeCallbacks.onError('タイトル、投稿者は必須項目です');
+      return;
+    }
 
-  const submitButton = (event.target as HTMLFormElement).querySelector(
-    'button[type="submit"]',
-  ) as HTMLButtonElement;
-  const originalText = submitButton.textContent || '';
-  submitButton.disabled = true;
-  submitButton.textContent = '追加中...';
+    const submitButton = (event.target as HTMLFormElement).querySelector(
+      'button[type="submit"]',
+    ) as HTMLButtonElement;
+    const originalText = submitButton.textContent || '';
+    submitButton.disabled = true;
+    submitButton.textContent = '追加中...';
 
-  createKnowledge(
-    knowledge,
-    result => {
-      submitButton.disabled = false;
-      submitButton.textContent = originalText;
-      try {
-        const response = typeof result === 'string' ? JSON.parse(result) : result;
-        if (response.success) {
-          safeCallbacks.onSuccess(response.id);
-        } else {
-          safeCallbacks.onError(response.error || 'ナレッジの追加に失敗しました');
+    createKnowledge(
+      knowledge,
+      result => {
+        submitButton.disabled = false;
+        submitButton.textContent = originalText;
+        try {
+          const response = typeof result === 'string' ? JSON.parse(result) : result;
+          if (response.success) {
+            safeCallbacks.onSuccess(response.id);
+          } else {
+            safeCallbacks.onError(response.error || 'ナレッジの追加に失敗しました');
+          }
+        } catch (error) {
+          console.error('Error parsing response:', error);
+          safeCallbacks.onError('ナレッジの追加に失敗しました');
         }
-      } catch (error) {
-        console.error('Error parsing response:', error);
-        safeCallbacks.onError('ナレッジの追加に失敗しました');
-      }
-    },
-    error => {
-      submitButton.disabled = false;
-      submitButton.textContent = originalText;
-      console.error('Error adding knowledge:', error);
-      safeCallbacks.onError(error?.message || 'ナレッジの追加に失敗しました');
-    },
-  );
+      },
+      error => {
+        submitButton.disabled = false;
+        submitButton.textContent = originalText;
+        console.error('Error adding knowledge:', error);
+        safeCallbacks.onError(error?.message || 'ナレッジの追加に失敗しました');
+      },
+    );
+  });
 }
 
 export function openEditModal(
@@ -190,57 +192,59 @@ export function submitUpdate(
     10,
   );
   commitPendingTagInput('edit');
-  const editTagValues = getTags('edit');
-  const editMetadata = collectMetadata('edit');
-  const editCategorySelect = document.getElementById('editCategory') as HTMLSelectElement | null;
-  const editCategoryValue = editCategorySelect ? editCategorySelect.value : '';
-  const category = (editCategoryValue || DEFAULT_CATEGORY_VALUE || 'article') as PostCategory;
-  const knowledge = {
-    title: (document.getElementById('editTitle') as HTMLInputElement).value.trim(),
-    url: (document.getElementById('editUrl') as HTMLInputElement).value.trim(),
-    comment: getMarkdownValue('edit', 'editComment'),
-    postedBy: (document.getElementById('editPostedBy') as HTMLInputElement).value.trim(),
-    thumbnailUrl: (document.getElementById('editThumbnailUrl') as HTMLInputElement).value.trim(),
-    tags: editTagValues,
-    category,
-    metadata: editMetadata,
-  };
+  void prepareEditorForSave('edit').then(() => {
+    const editTagValues = getTags('edit');
+    const editMetadata = collectMetadata('edit');
+    const editCategorySelect = document.getElementById('editCategory') as HTMLSelectElement | null;
+    const editCategoryValue = editCategorySelect ? editCategorySelect.value : '';
+    const category = (editCategoryValue || DEFAULT_CATEGORY_VALUE || 'article') as PostCategory;
+    const knowledge = {
+      title: (document.getElementById('editTitle') as HTMLInputElement).value.trim(),
+      url: (document.getElementById('editUrl') as HTMLInputElement).value.trim(),
+      comment: getMarkdownValue('edit', 'editComment'),
+      postedBy: (document.getElementById('editPostedBy') as HTMLInputElement).value.trim(),
+      thumbnailUrl: (document.getElementById('editThumbnailUrl') as HTMLInputElement).value.trim(),
+      tags: editTagValues,
+      category,
+      metadata: editMetadata,
+    };
 
-  if (!knowledge.title || !knowledge.postedBy) {
-    callbacks.onError('タイトル、投稿者は必須項目です');
-    return;
-  }
+    if (!knowledge.title || !knowledge.postedBy) {
+      callbacks.onError('タイトル、投稿者は必須項目です');
+      return;
+    }
 
-  const submitButton = (event.target as HTMLFormElement).querySelector(
-    'button[type="submit"]',
-  ) as HTMLButtonElement;
-  const originalText = submitButton.textContent || '';
-  submitButton.disabled = true;
-  submitButton.textContent = '更新中...';
+    const submitButton = (event.target as HTMLFormElement).querySelector(
+      'button[type="submit"]',
+    ) as HTMLButtonElement;
+    const originalText = submitButton.textContent || '';
+    submitButton.disabled = true;
+    submitButton.textContent = '更新中...';
 
-  updateKnowledge(
-    knowledgeId,
-    knowledge,
-    result => {
-      submitButton.disabled = false;
-      submitButton.textContent = originalText;
-      try {
-        const response = typeof result === 'string' ? JSON.parse(result) : result;
-        if (response.success) {
-          callbacks.onSuccess();
-        } else {
-          callbacks.onError(response.error || 'ナレッジの更新に失敗しました');
+    updateKnowledge(
+      knowledgeId,
+      knowledge,
+      result => {
+        submitButton.disabled = false;
+        submitButton.textContent = originalText;
+        try {
+          const response = typeof result === 'string' ? JSON.parse(result) : result;
+          if (response.success) {
+            callbacks.onSuccess();
+          } else {
+            callbacks.onError(response.error || 'ナレッジの更新に失敗しました');
+          }
+        } catch (error) {
+          console.error('Error parsing response:', error);
+          callbacks.onError('ナレッジの更新に失敗しました');
         }
-      } catch (error) {
-        console.error('Error parsing response:', error);
-        callbacks.onError('ナレッジの更新に失敗しました');
-      }
-    },
-    error => {
-      submitButton.disabled = false;
-      submitButton.textContent = originalText;
-      console.error('Error updating knowledge:', error);
-      callbacks.onError(error?.message || 'ナレッジの更新に失敗しました');
-    },
-  );
+      },
+      error => {
+        submitButton.disabled = false;
+        submitButton.textContent = originalText;
+        console.error('Error updating knowledge:', error);
+        callbacks.onError(error?.message || 'ナレッジの更新に失敗しました');
+      },
+    );
+  });
 }

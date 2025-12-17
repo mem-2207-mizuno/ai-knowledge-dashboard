@@ -160,27 +160,19 @@ function uploadKnowledgeImage(payload: { dataUrl: string; filename?: string }): 
   const blob = Utilities.newBlob(bytes, mimeType, safeName);
   const folderId = getOrCreateUploadFolderId();
   const file = DriveApp.getFolderById(folderId).createFile(blob);
-  let isPublic = false;
   try {
     file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-    isPublic = true;
   } catch (error1) {
     try {
       file.setSharing(DriveApp.Access.DOMAIN_WITH_LINK, DriveApp.Permission.VIEW);
-      // ドメイン共有の場合、iframe/サードパーティCookie制限でDrive直リンクが表示できないケースがあるため、
-      // URLは返すが、表示が403になる場合はクライアント側で再挿入（dataURL）運用に切り替える。
-      isPublic = false;
     } catch (error2) {
       console.warn('Skipping setSharing due to policy/permission:', error1, error2);
-      isPublic = false;
     }
   }
 
-  // 公開リンクにできた場合のみDrive URLを返す。できない場合は dataURL を返して確実に表示させる。
-  if (isPublic) {
-    return `https://drive.google.com/uc?export=view&id=${file.getId()}`;
-  }
-  return dataUrl;
+  // 文字数制限を回避するため、本文にはdataURLを保存しない。
+  // 画像の表示はクライアント側で fileId -> dataURL に解決する。
+  return `gasimg:${file.getId()}`;
 }
 
 /**
