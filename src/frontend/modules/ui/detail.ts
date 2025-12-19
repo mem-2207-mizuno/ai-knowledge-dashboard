@@ -450,7 +450,13 @@ function renderDetailBodyHtml(knowledge: any, mode: DetailMode): string {
           <span class="category-badge">${categoryLabel}</span>
           <span class="status-pill">${statusLabel}</span>
         </div>
-        ${knowledge.thumbnailUrl ? `<img src="${knowledge.thumbnailUrl}" alt="${knowledge.title}" style="width: 100%; max-height: 300px; object-fit: cover; border-radius: 5px; margin-bottom: 20px;">` : ''}
+        ${
+          knowledge.thumbnailUrl
+            ? `<div class="detail-thumbnail" aria-label="サムネイル">
+                <img src="${knowledge.thumbnailUrl}" alt="${knowledge.title}" loading="lazy" />
+              </div>`
+            : ''
+        }
         <div class="detail-property-list">
           <div class="property-row">
             <div class="property-label">参照URL</div>
@@ -668,7 +674,47 @@ function fallbackCopyText(text: string): boolean {
 }
 
 export function copyShareLink(id: number, mode?: DetailMode) {
-  const baseUrl = (window as any).SERVER_DATA?.appUrl || window.location.href.split('?')[0];
+  // /dev を /exec に正規化する関数
+  const normalizeExecUrl = (url: string): string => {
+    return String(url || '').replace(/\/dev(?=$|\/|\?)/, '/exec');
+  };
+
+  // GASの正規URLかどうかをチェック
+  const isCanonicalGasUrl = (url: string): boolean => {
+    try {
+      const parsed = new URL(url);
+      return parsed.hostname === 'script.google.com' && parsed.pathname.includes('/macros/s/');
+    } catch {
+      return false;
+    }
+  };
+
+  // googleusercontent.comのURLかどうかをチェック
+  const isGoogleusercontentUrl = (url: string): boolean => {
+    try {
+      const parsed = new URL(url);
+      return parsed.hostname.endsWith('googleusercontent.com');
+    } catch {
+      return false;
+    }
+  };
+
+  // 複数の候補から最適なベースURLを選択
+  const locationBase =
+    window.location.origin && window.location.pathname
+      ? normalizeExecUrl(`${window.location.origin}${window.location.pathname}`)
+      : '';
+  const serverBase = normalizeExecUrl((window as any).SERVER_DATA?.appUrl || '');
+  const fallbackBase = normalizeExecUrl(window.location.href.split('?')[0]);
+
+  // 優先順位に基づいてベースURLを選択
+  const baseUrl =
+    (locationBase && isCanonicalGasUrl(locationBase) && locationBase) ||
+    (serverBase && isCanonicalGasUrl(serverBase) && serverBase) ||
+    (locationBase && !isGoogleusercontentUrl(locationBase) && locationBase) ||
+    serverBase ||
+    fallbackBase;
+
   const shareMode = mode || currentDetailMode || 'modal';
   const urlObj = new URL(baseUrl);
   urlObj.searchParams.set('id', String(id));

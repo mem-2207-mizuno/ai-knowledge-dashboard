@@ -166,8 +166,25 @@ async function hydratePrivateDriveImages(editor: BlockNoteEditor) {
         if (mimeType && base64) {
           byId[fileId] = `data:${mimeType};base64,${base64}`;
         }
-      } catch (error) {
-        console.warn('Failed to hydrate image from Drive:', fileId, error);
+      } catch (error: any) {
+        // エラーの詳細をログに記録
+        const errorMessage = error?.message || String(error || '');
+        const errorString = String(error || '');
+
+        // FAILED_PRECONDITION エラーの場合は詳細な情報を記録
+        if (
+          errorMessage.includes('FAILED_PRECONDITION') ||
+          errorMessage.includes('ストレージ') ||
+          errorString.includes('FAILED_PRECONDITION') ||
+          errorMessage.includes('アクセスできません')
+        ) {
+          console.warn(
+            `Failed to hydrate image from Drive (FAILED_PRECONDITION): fileId=${fileId}, error=${errorMessage}`,
+          );
+        } else {
+          console.warn(`Failed to hydrate image from Drive: fileId=${fileId}`, error);
+        }
+        // エラーが発生しても処理は続行（他の画像は表示される）
       }
     }),
   );

@@ -703,6 +703,29 @@
     color: #2f3437;
   }
 
+  /* 詳細（モーダル/パネル）のサムネイルは「見切れなし」を優先 */
+  .detail-thumbnail {
+    width: 100%;
+    max-height: 400px;
+    /* 一般的な横長サムネ: 16:9 を基準に枠を確保 */
+    aspect-ratio: 16 / 9;
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .detail-thumbnail img {
+    max-width: 100%;
+    max-height: 100%;
+    /* どんな比率でも全体表示（見切れなし） */
+    object-fit: contain;
+    display: block;
+    border-radius: 10px;
+  }
+
   .comment-list {
     display: flex;
     flex-direction: column;

@@ -121,12 +121,55 @@ function getKnowledgeImageData(fileId: string): { mimeType: string; base64: stri
   if (!normalized) {
     throw new Error('fileIdが不正です');
   }
-  const file = DriveApp.getFileById(normalized);
-  const blob = file.getBlob();
-  return {
-    mimeType: blob.getContentType() || 'application/octet-stream',
-    base64: Utilities.base64Encode(blob.getBytes()),
-  };
+
+  try {
+    // ファイルの存在確認とアクセス権限チェック
+    const file = DriveApp.getFileById(normalized);
+    // ファイルが存在するか確認（getUrl()で確認）
+    try {
+      file.getUrl();
+    } catch (urlError: any) {
+      // ファイルへのアクセス権限がない、またはファイルが存在しない
+      const errorMessage = urlError?.message || String(urlError || '');
+      if (errorMessage.includes('FAILED_PRECONDITION') || errorMessage.includes('ストレージ')) {
+        throw new Error(
+          `ファイルにアクセスできません（ファイルが存在しないか、アクセス権限がありません）。fileId: ${normalized}`,
+        );
+      }
+      throw urlError;
+    }
+
+    const blob = file.getBlob();
+    if (!blob) {
+      throw new Error(`ファイルのデータを取得できませんでした。fileId: ${normalized}`);
+    }
+
+    return {
+      mimeType: blob.getContentType() || 'application/octet-stream',
+      base64: Utilities.base64Encode(blob.getBytes()),
+    };
+  } catch (error: any) {
+    const errorMessage = error?.message || String(error || '');
+    const errorString = String(error || '');
+
+    // FAILED_PRECONDITION エラーの詳細な処理
+    if (
+      errorMessage.includes('FAILED_PRECONDITION') ||
+      errorMessage.includes('ストレージ') ||
+      errorString.includes('FAILED_PRECONDITION')
+    ) {
+      console.error(
+        `Failed to get image data (FAILED_PRECONDITION): fileId=${normalized}, error=${errorMessage}`,
+      );
+      throw new Error(
+        `画像ファイルにアクセスできません（ファイルが削除されたか、アクセス権限がありません）。fileId: ${normalized}`,
+      );
+    }
+
+    // その他のエラー
+    console.error(`Failed to get image data: fileId=${normalized}, error=${errorMessage}`);
+    throw error;
+  }
 }
 
 function authorizeDrive(): boolean {

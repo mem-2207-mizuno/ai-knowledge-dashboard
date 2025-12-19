@@ -706,6 +706,7 @@
   /* 詳細（モーダル/パネル）のサムネイルは「見切れなし」を優先 */
   .detail-thumbnail {
     width: 100%;
+    max-height: 400px;
     /* 一般的な横長サムネ: 16:9 を基準に枠を確保 */
     aspect-ratio: 16 / 9;
     /* background: #f3f4f6;
@@ -716,8 +717,6 @@
     display: flex;
     align-items: center;
     justify-content: center;
-
-    max-height: 400px;
   }
 
   .detail-thumbnail img {
